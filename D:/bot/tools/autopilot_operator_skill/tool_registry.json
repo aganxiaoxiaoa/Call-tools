@@ -1,0 +1,168 @@
+{
+  "tools": [
+    {
+      "name": "disk_cleaner",
+      "description": "磁盘扫描和安全清理工具（自动模式仅允许扫描）",
+      "intents": ["磁盘扫描", "磁盘清理", "空间分析", "清理建议"],
+      "candidate_paths": [
+        "D:\\bot\\tool\\Cleaning tools\\disk_cleaner.ps1",
+        "D:\\bot\\tools\\disk_cleaner\\disk_cleaner.ps1"
+      ],
+      "command_templates": {
+        "scan": "powershell -ExecutionPolicy Bypass -File \"{tool_path}\" -Scan",
+        "clean_safe": "powershell -ExecutionPolicy Bypass -File \"{tool_path}\" -CleanSafe"
+      },
+      "safe_actions": ["scan"],
+      "blocked_actions": ["clean_safe", "delete", "remove"],
+      "risk": {"scan": "low", "CleanSafe": "medium"},
+      "requires_media": false,
+      "requires_api_key": false,
+      "paid_api_risk": false,
+      "destructive_risk": true,
+      "notes": "自动化仅允许 -Scan，-CleanSafe 必须用户确认"
+    },
+    {
+      "name": "b2b_marketing",
+      "description": "B2B独立站运营/GEO/SEO/博客/短视频脚本/FAQ/客户回复",
+      "intents": ["博客", "GEO", "SEO", "内容计划", "短视频脚本", "客户回复"],
+      "candidate_paths": [
+        "D:\\bot\\tool\\Business tools\\b2b_marketing_tool.py",
+        "D:\\bot\\tools\\b2b_marketing\\b2b_marketing_tool.py"
+      ],
+      "command_templates": {
+        "generate": "py \"{tool_path}\" --task \"{task}\""
+      },
+      "safe_actions": ["generate"],
+      "blocked_actions": ["overwrite", "install", "paid_api"],
+      "risk": "low",
+      "requires_media": false,
+      "requires_api_key": false,
+      "paid_api_risk": false,
+      "destructive_risk": false,
+      "notes": "文本生成类任务可低风险自动执行"
+    },
+    {
+      "name": "image_style_analyzer",
+      "description": "图片风格、色彩、构图、AI感分析",
+      "intents": ["图片分析", "风格分析", "色彩分析", "构图分析"],
+      "candidate_paths": [
+        "D:\\bot\\tools\\image_style_analyzer_skill\\image_analysis_tool.py",
+        "D:\\bot\\tools\\image_analysis_skill\\image_analysis_tool.py",
+        "D:\\bot\\tool\\Imageanalysistools\\image_analysis_tool.py"
+      ],
+      "command_templates": {
+        "analyze": "py \"{tool_path}\" --image \"{{MediaPath}}\""
+      },
+      "safe_actions": ["analyze"],
+      "blocked_actions": ["overwrite", "delete"],
+      "risk": "low",
+      "requires_media": true,
+      "requires_api_key": false,
+      "paid_api_risk": false,
+      "destructive_risk": false,
+      "notes": "需用户提供 {{MediaPath}}"
+    },
+    {
+      "name": "graphic_design_analyzer",
+      "description": "平面设计、版式、文字排版、广告图分析",
+      "intents": ["设计分析", "排版分析", "广告图分析", "文字可读性"],
+      "candidate_paths": [
+        "D:\\bot\\tools\\graphic_design_analyzer_skill\\graphic_design_tool.py"
+      ],
+      "command_templates": {
+        "analyze": "py \"{tool_path}\" --image \"{{MediaPath}}\""
+      },
+      "safe_actions": ["analyze"],
+      "blocked_actions": ["overwrite", "delete"],
+      "risk": "low",
+      "requires_media": true,
+      "requires_api_key": false,
+      "paid_api_risk": false,
+      "destructive_risk": false,
+      "notes": "需用户提供 {{MediaPath}}"
+    },
+    {
+      "name": "facefusion_swap",
+      "description": "本地 FaceFusion 换脸",
+      "intents": ["换脸", "facefusion", "人脸替换"],
+      "candidate_paths": [
+        "D:\\bot\\tools\\facefusion_swap\\facefusion_swap.py",
+        "D:\\bot\\tool\\FaceFusion tools\\facefusion_swap.py"
+      ],
+      "command_templates": {
+        "swap": "py \"{tool_path}\" --source \"{source}\" --target \"{{MediaPath}}\""
+      },
+      "safe_actions": [],
+      "blocked_actions": ["auto_swap"],
+      "risk": "medium",
+      "requires_media": true,
+      "requires_api_key": false,
+      "paid_api_risk": false,
+      "destructive_risk": false,
+      "notes": "涉及隐私与肖像，必须用户确认并明确 source"
+    },
+    {
+      "name": "video_audio_analysis",
+      "description": "Telegram 视频音频分析",
+      "intents": ["视频分析", "音频分析", "字幕提取", "视频理解"],
+      "candidate_paths": [
+        "D:\\bot\\openclaw_data\\.openclaw\\scripts\\video_audio_auto.py",
+        "C:\\Users\\Administrator\\.openclaw\\scripts\\video_audio_auto.py"
+      ],
+      "command_templates": {
+        "analyze": "py \"{tool_path}\" --input \"{{MediaPath}}\""
+      },
+      "safe_actions": [],
+      "blocked_actions": ["auto_api_call"],
+      "risk": "medium",
+      "requires_media": true,
+      "requires_api_key": true,
+      "paid_api_risk": true,
+      "destructive_risk": false,
+      "notes": "可能调用 DashScope/Qwen API，默认需确认"
+    },
+    {
+      "name": "pixelle_video",
+      "description": "Pixelle-Video 自动化短视频引擎",
+      "intents": ["视频生成", "pixelle", "短视频制作"],
+      "candidate_paths": [
+        "D:\\bot\\video\\Pixelle\\Pixelle-Video-v0.1.15-win64\\start.bat",
+        "D:\\bot\\video\\scripts\\start_pixelle.ps1"
+      ],
+      "command_templates": {
+        "start": "\"{tool_path}\""
+      },
+      "safe_actions": [],
+      "blocked_actions": ["auto_video_generation"],
+      "risk": "high",
+      "requires_media": false,
+      "requires_api_key": true,
+      "paid_api_risk": true,
+      "destructive_risk": false,
+      "notes": "可能调用付费图片/视频API，自动模式禁止执行"
+    },
+    {
+      "name": "agent_control_center",
+      "description": "全局自检、防幻觉、工具路由",
+      "intents": ["列工具", "路由", "检查工具", "解释错误", "项目地图"],
+      "candidate_paths": [
+        "D:\\bot\\tools\\agent_control_center_skill\\agent_control_center.py"
+      ],
+      "command_templates": {
+        "list-tools": "py \"{tool_path}\" list-tools",
+        "route": "py \"{tool_path}\" route --intent \"{intent}\"",
+        "check-tool": "py \"{tool_path}\" check-tool --name \"{tool_name}\"",
+        "error-explain": "py \"{tool_path}\" error-explain --log \"{log}\"",
+        "project-map": "py \"{tool_path}\" project-map"
+      },
+      "safe_actions": ["list-tools", "route", "check-tool", "error-explain", "project-map"],
+      "blocked_actions": ["modify_config"],
+      "risk": "low",
+      "requires_media": false,
+      "requires_api_key": false,
+      "paid_api_risk": false,
+      "destructive_risk": false,
+      "notes": "自动化可安全调用以上只读动作"
+    }
+  ]
+}
