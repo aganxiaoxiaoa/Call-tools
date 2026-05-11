@@ -23,13 +23,13 @@
 4. 网站抓取必须小规模、限速、遵守 robots.txt。
 5. 调用工具前必须先做路径与风险检查。
 6. 低风险可执行；高风险必须二次确认。
-7. 禁止暗网/灰黑产内容获取、越权抓取、绕过限制、版权批量下载。
+7. 爬去暗网/灰产内容获取、绕过限制、批量下载。
 
 ## Governance-first Workflow
 1. 对用户请求先运行 `preflight`。
 2. 若涉及工具选择，运行 `intent-router`。
 3. 生成回答前运行 `truth-check`。
-4. 涉及公开网页研究时，先 `research-plan`，再 `public-web-fetch` 或 `public-site-scan`。
+4. 涉及网页研究时，先 `research-plan`，再 `web-fetch` 或 `site-scan`。
 5. 输出报告时运行 `source-summarize` 并标注不可直接抄袭内容。
 6. 被禁止请求统一走 `blocked-task-explain`。
 
