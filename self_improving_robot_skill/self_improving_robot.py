@@ -95,6 +95,12 @@ def code_check(a):
             if re.search(r"\bpass\b",t): issues.append(f"pass_statement:{f}")
             try: subprocess.run([sys.executable,"-m","py_compile",str(f)],check=True,capture_output=True,text=True,timeout=15)
             except Exception as e: issues.append(f"py_compile_failed:{f}:{e}")
+        if f.suffix==".py":
+            try: subprocess.run([sys.executable,str(f),"--help"],check=True,capture_output=True,text=True,timeout=10)
+            except Exception as e: issues.append(f"help_failed:{f}:{e}")
+        if f.suffix==".json":
+            try: json.loads(t)
+            except Exception as e: issues.append(f"json_invalid:{f}:{e}")
         if f.name.lower()=="skill.md" and not t.startswith("---\n"): issues.append(f"skill_frontmatter_missing:{f}")
     rep={"time":ts(),"path":str(p),"ok":not issues,"issues":issues}
     jp=STORE_ROOT/f"07_outputs/maintenance/code_check_{ts()}.json"; mp=STORE_ROOT/f"07_outputs/maintenance/code_check_{ts()}.md"
@@ -161,6 +167,52 @@ def upgrade_tool(a):
     rp=STORE_ROOT/f"07_outputs/code_reports/upgrade_tool_{ts()}.md"; write(rp,f"# upgrade-tool\ntool={a.tool}\nbackup={b}")
     log_code("upgrade-tool","success","工具升级完成",{"tool":a.tool,"report":str(rp)}); print(f"已保存: {rp}")
 
+def registry_audit(a):
+    init_store(False)
+    reg=jload(STORE_ROOT/"03_tool_registry/tools_registry.json",default_tools())
+    suggested={"generated_at":ts(),"tools":reg.get("tools",[])}
+    jdump(STORE_ROOT/"03_tool_registry/tools_registry_suggested.json",suggested)
+    rpt=STORE_ROOT/f"07_outputs/maintenance/registry_audit_{ts()}.md"
+    write(rpt,"# registry-audit\n")
+    if a.apply:
+        s=jload(STORE_ROOT/"03_tool_registry/tools_registry_suggested.json",{})
+        t=s.get("tools")
+        if isinstance(t,list):
+            jdump(STORE_ROOT/"03_tool_registry/tools_registry.json",{"tools":t})
+        else:
+            print("拒绝应用: suggested 结构错误")
+    print(f"已保存: {rpt}")
+
+def skill_health(_):
+    init_store(False)
+    reg=jload(STORE_ROOT/"03_tool_registry/tools_registry.json",default_tools()).get("tools",[])
+    rows=[]
+    for tool in reg:
+        cp=tool.get("candidate_paths",[])
+        main=Path(cp[0]) if cp else Path('')
+        exists=main.exists()
+        readme=main.parent/"README.md" if exists else Path('')
+        skill=main.parent/"SKILL.md" if exists else Path('')
+        pyc_ok=None
+        help_ok=None
+        if exists and main.suffix=='.py':
+            try:
+                subprocess.run([sys.executable,'-m','py_compile',str(main)],check=True,capture_output=True,text=True,timeout=10); pyc_ok=True
+            except Exception: pyc_ok=False
+            try:
+                subprocess.run([sys.executable,str(main),'--help'],check=True,capture_output=True,text=True,timeout=10); help_ok=True
+            except Exception: help_ok=False
+        risk=int(tool.get('paid_api_risk',False))+int(tool.get('destructive_risk',False))
+        score=max(0,10-(0 if exists else 4)-(0 if readme.exists() else 1)-(0 if skill.exists() else 1)-(0 if (pyc_ok is not False) else 2)-(0 if (help_ok is not False) else 1)-risk)
+        rows.append({"name":tool.get("name"),"exists":exists,"readme":readme.exists() if readme else False,"skill":skill.exists() if skill else False,"py_compile_ok":pyc_ok,"help_ok":help_ok,"paid_api_risk":tool.get('paid_api_risk'),"destructive_risk":tool.get('destructive_risk'),"score":score})
+    avg=round(sum(r['score'] for r in rows)/max(1,len(rows)),2)
+    jdump(STORE_ROOT/"03_tool_registry/tool_health.json",{"updated_at":ts(),"score":avg,"tools":rows})
+    rpt=STORE_ROOT/f"07_outputs/maintenance/skill_health_{ts()}.md"; write(rpt,"# skill-health\n\n"+json.dumps({"score":avg,"tools":rows},ensure_ascii=False,indent=2)); print(f"已保存: {rpt}")
+
+def error_learn(a):
+    jl_append(STORE_ROOT/"06_error_lessons/error_log.jsonl",{"time":ts(),"error":a.error,"context":getattr(a,'context','')})
+    print("已记录错误")
+
 def placeholder(name): print(f"{name} 已执行")
 
 def build():
@@ -187,6 +239,9 @@ def main():
     a=build().parse_args()
     if a.cmd=="init-store": return init_store(a.force)
     if a.cmd=="remember-task": jl_append(STORE_ROOT/"02_task_memory/task_log.jsonl",vars(a)); return print("已记录")
+    if a.cmd=="registry-audit": return registry_audit(a)
+    if a.cmd=="skill-health": return skill_health(a)
+    if a.cmd=="error-learn": return error_learn(a)
     if a.cmd=="code-plan": return code_plan(a)
     if a.cmd=="code-generate": return code_generate(a)
     if a.cmd=="code-check": return code_check(a)
