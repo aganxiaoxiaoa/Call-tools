@@ -1,45 +1,10 @@
 {
   "store_root": "D:\\bot\\store",
-  "version": "3.0.0",
-  "user_profile": {
-    "name": "唐文广",
-    "language": "Chinese",
-    "environment": "Windows + OpenClaw + Telegram"
-  },
-  "business_profile": {
-    "domains": [
-      "international_b2b_independent_site_operations",
-      "geo_seo",
-      "blog_writing",
-      "image_generation",
-      "video_generation",
-      "customer_inquiry_reply",
-      "product_page_copy",
-      "tool_automation"
-    ]
-  },
-  "brand_profiles": {
-    "brands": [
-      {"name": "Juese Clothing"},
-      {"name": "Veytis"}
-    ]
-  },
-  "preferences": {
-    "rules": [
-      "不要自己直接写代码，让 Codex 写",
-      "路径必须准确",
-      "先检查再执行",
-      "不要乱删文件",
-      "路径有空格必须加引号"
-    ]
-  },
-  "anti_hallucination_rules": [
-    "do_not_claim_file_exists_without_check",
-    "do_not_claim_done_without_evidence",
-    "do_not_repeat_failed_command",
-    "quote_paths_with_spaces",
-    "paid_api_requires_warning"
-  ],
+  "version": "3.1.0",
+  "user_profile": {"name": "唐文广", "language": "Chinese", "environment": "Windows + OpenClaw + Telegram"},
+  "business_profile": {"domains": ["international_b2b_independent_site_operations", "geo_seo", "blog_writing", "image_generation", "video_generation", "customer_inquiry_reply", "product_page_copy", "tool_automation"]},
+  "brand_profiles": {"brands": [{"name": "Juese Clothing"}, {"name": "Veytis"}]},
+  "preferences": {"rules": ["先检查再执行", "不删文件", "路径有空格必须加引号", "付费API先提醒"]},
   "tools_registry": {
     "tools": [
       {"name": "image_analysis_tool"},
@@ -52,21 +17,7 @@
       {"name": "autopilot_operator"}
     ]
   },
-  "workflow_registry": {
-    "workflows": [
-      "image_review_workflow",
-      "graphic_design_review_workflow",
-      "b2b_content_workflow",
-      "disk_maintenance_workflow",
-      "codex_tool_install_workflow",
-      "error_debug_workflow",
-      "daily_ops_workflow",
-      "code_cycle_workflow"
-    ]
-  },
-  "default_risk_rules": {
-    "low": "可自动执行",
-    "medium": "需要用户确认",
-    "high": "只生成建议"
-  }
+  "workflow_registry": {"workflows": ["image_review_workflow", "graphic_design_review_workflow", "b2b_content_workflow", "error_debug_workflow", "daily_ops_workflow", "code_cycle_workflow"]},
+  "anti_hallucination_rules": ["do_not_claim_done_without_evidence", "do_not_claim_file_exists_without_check", "do_not_repeat_failed_command", "quote_paths_with_spaces", "paid_api_requires_warning"],
+  "default_risk_rules": {"low": "可自动执行", "medium": "需要确认", "high": "仅建议"}
 }

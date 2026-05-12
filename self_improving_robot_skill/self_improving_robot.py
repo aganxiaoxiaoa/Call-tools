@@ -215,6 +215,47 @@ def error_learn(a):
 
 def placeholder(name): print(f"{name} 已执行")
 
+
+def review(a):
+    rows=jl_read(STORE_ROOT/"02_task_memory/task_log.jsonl")[-a.limit:]
+    rpt=STORE_ROOT/f"07_outputs/summaries/review_{ts()}.md"
+    write(rpt,"# review\n\n"+json.dumps(rows,ensure_ascii=False,indent=2)); print(f"已保存: {rpt}")
+
+def learn(_):
+    logs=jl_read(STORE_ROOT/"02_task_memory/code_task_log.jsonl")
+    if logs: jl_append(STORE_ROOT/"04_skill_memory/learned_skills.jsonl",{"time":ts(),"lesson":"最近代码任务复盘","count":len(logs)})
+    rpt=STORE_ROOT/f"07_outputs/summaries/learn_{ts()}.md"; write(rpt,"# learn\n"); print(f"已保存: {rpt}")
+
+def propose_skill(a):
+    rec={"time":ts(),"idea":a.idea,"recommend":"b2b_marketing_tool" if "blog" in a.idea.lower() else "self_improving_robot"}
+    jl_append(STORE_ROOT/"04_skill_memory/skill_candidates.jsonl",rec); print("已写入 skill_candidates")
+
+def generate_codex_prompt(a):
+    p=STORE_ROOT/f"04_skill_memory/codex_prompts/{ts()}_codex_prompt.md"; write(p,f"# goal\n{a.goal}\n"); print(f"已保存: {p}")
+
+def anti_check(a):
+    risks=[]
+    if "已经" in a.answer and "Test-Path" not in a.answer: risks.append("缺少证据")
+    p=STORE_ROOT/f"07_outputs/reports/anti_hallucination_{ts()}.md"; write(p,"\n".join(risks or ["低风险"])); print(f"已保存: {p}")
+
+def daily_ops(a):
+    jdump(STORE_ROOT/"05_workflows/daily_ops_plan.json",{"date":ts('%Y-%m-%d'),"brand":a.brand,"industry":a.industry}); print("已更新 daily_ops_plan")
+
+def automation_plan(a):
+    jl_append(STORE_ROOT/"05_workflows/automation_queue.jsonl",{"time":ts(),"task":a.task,"frequency":a.frequency,"risk":a.risk}); print("已写入 automation_queue")
+
+def run_due(_):
+    q=jl_read(STORE_ROOT/"05_workflows/automation_queue.jsonl")
+    for x in q: jl_append(STORE_ROOT/"05_workflows/workflow_runs.jsonl",{"time":ts(),"task":x.get('task'),"status":"listed"})
+    print("run-due 完成")
+
+def export_context(_):
+    p=STORE_ROOT/f"07_outputs/exports/system_context_{ts()}.md"; write(p,"# context\n"); print(f"已保存: {p}")
+
+def snapshot(_):
+    files=[str(x) for x in STORE_ROOT.rglob('*') if x.is_file()] if STORE_ROOT.exists() else []
+    p=STORE_ROOT/f"07_outputs/snapshots/snapshot_{ts()}.json"; jdump(p,{"time":ts(),"file_count":len(files)}); print(f"已保存: {p}")
+
 def build():
     p=argparse.ArgumentParser(description="self_improving_robot")
     s=p.add_subparsers(dest="cmd",required=True)
@@ -239,9 +280,19 @@ def main():
     a=build().parse_args()
     if a.cmd=="init-store": return init_store(a.force)
     if a.cmd=="remember-task": jl_append(STORE_ROOT/"02_task_memory/task_log.jsonl",vars(a)); return print("已记录")
+    if a.cmd=="review": return review(a)
+    if a.cmd=="learn": return learn(a)
+    if a.cmd=="propose-skill": return propose_skill(a)
+    if a.cmd=="generate-codex-prompt": return generate_codex_prompt(a)
     if a.cmd=="registry-audit": return registry_audit(a)
     if a.cmd=="skill-health": return skill_health(a)
+    if a.cmd=="anti-hallucination-check": return anti_check(a)
     if a.cmd=="error-learn": return error_learn(a)
+    if a.cmd=="daily-ops": return daily_ops(a)
+    if a.cmd=="automation-plan": return automation_plan(a)
+    if a.cmd=="run-due": return run_due(a)
+    if a.cmd=="export-system-context": return export_context(a)
+    if a.cmd=="snapshot": return snapshot(a)
     if a.cmd=="code-plan": return code_plan(a)
     if a.cmd=="code-generate": return code_generate(a)
     if a.cmd=="code-check": return code_check(a)
