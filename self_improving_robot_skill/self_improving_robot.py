@@ -295,8 +295,7 @@ def upgrade_tool(a):
     if not isinstance(patch,dict) or patch.get('type') not in ['replace','write_file','append_safe']: return print("patch-file 无效")
     target=Path(patch.get('file',str(path)))
     try:
-        if path.parent.resolve() not in target.resolve().parents and target.resolve()!=path.parent.resolve():
-            return print('拒绝越权路径')
+        target.resolve().relative_to(path.parent.resolve())
     except Exception:
         return print('路径校验失败')
     if patch.get('type')=='append_safe' and target.suffix in ['.py','.ps1']: return print('append_safe 不允许代码文件')
@@ -311,7 +310,8 @@ def upgrade_tool(a):
     status="success" if rep.get('ok') else "fail"
     rpt=STORE_ROOT/f"07_outputs/code_reports/upgrade_tool_{ts()}.md"; write(rpt,"# upgrade-tool\n\n"+json.dumps({"status":status,"backup":b,"check":str(chk)},ensure_ascii=False,indent=2))
     log_code("upgrade-tool",status,"升级执行",{"report":str(rpt)})
-    if not rep.get('ok'): jl_append(STORE_ROOT/"06_error_lessons/code_error_log.jsonl",{"time":ts(),"source":"upgrade-tool","tool_report":str(chk_tool),"skill_report":str(chk_skill)})
+    if not rep.get('ok'):
+        jl_append(STORE_ROOT/"06_error_lessons/code_error_log.jsonl",{"time":ts(),"source":"upgrade-tool","tool":a.tool,"check_report":str(chk),"issues":rep.get("issues",[]),"patch_file":a.patch_file,"backup_path":b})
     print(f"已保存: {rpt}")
 
 # minimal legacy memory commands
@@ -338,7 +338,16 @@ def learn(_):
     jl_append(STORE_ROOT/"04_skill_memory/learned_skills.jsonl",rec); print("learn 完成")
 def propose_skill(a): jl_append(STORE_ROOT/"04_skill_memory/skill_candidates.jsonl",{"time":ts(),"idea":a.idea}); print("propose 完成")
 def gen_prompt(a): write(STORE_ROOT/f"04_skill_memory/codex_prompts/{ts()}_codex_prompt.md",a.goal); print("prompt 已保存")
-def anti(a): write(STORE_ROOT/f"07_outputs/reports/anti_hallucination_{ts()}.md",a.answer); print("anti 完成")
+def anti(a):
+    ans=a.answer
+    risks=[]
+    if re.search(r"已经(创建|完成|安装)",ans) and ("Test-Path" not in ans and "证据" not in ans): risks.append("声明已完成但缺少证据")
+    if re.search(r"[A-Za-z]:\\[^\"\n]* [^\"\n]*",ans): risks.append("路径包含空格但可能未加引号")
+    if any(x in ans.lower() for x in ["remove-item","del ","rmdir","format","git clean","git reset"]): risks.append("包含危险删除/重置命令")
+    if "api" in ans.lower() and "收费" not in ans: risks.append("提到API但未提醒可能付费")
+    if "codex" in ans.lower() and "写" in ans and "prompt" not in ans.lower() and "计划" not in ans: risks.append("用户要求Codex写，但回复未转为Codex任务提示")
+    data={"time":ts(),"answer":ans,"risks":risks,"risk_level":"high" if risks else "low"}
+    p=STORE_ROOT/f"07_outputs/reports/anti_hallucination_{ts()}.md"; write(p,json.dumps(data,ensure_ascii=False,indent=2)); print(f"已保存: {p}")
 def err(a): jl_append(STORE_ROOT/"06_error_lessons/error_log.jsonl",{"time":ts(),"error":a.error,"context":a.context}); print("error 已记录")
 def daily(a): jdump(STORE_ROOT/"05_workflows/daily_ops_plan.json",{"date":ts('%Y-%m-%d'),"brand":a.brand,"industry":a.industry}); print("daily 完成")
 def auto(a): jl_append(STORE_ROOT/"05_workflows/automation_queue.jsonl",{"time":ts(),"task":a.task,"frequency":a.frequency,"risk":a.risk}); print("automation 完成")
