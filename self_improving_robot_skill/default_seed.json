@@ -21,10 +21,52 @@
   "brand_profiles": {
     "brands": [
       {
-        "name": "Juese Clothing"
+        "name": "Juese Clothing",
+        "industry": "garment manufacturing",
+        "business_model": "B2B OEM/ODM wholesale",
+        "target_customers": [
+          "apparel brands",
+          "wholesalers",
+          "importers"
+        ],
+        "common_tasks": [
+          "custom clothing manufacturer 页面文案",
+          "custom hoodie manufacturer 视频脚本",
+          "工厂图片分析",
+          "客户询盘英文回复"
+        ],
+        "visual_preferences": [
+          "production floor realism",
+          "clean industrial lighting"
+        ],
+        "content_preferences": [
+          "technical capability proof",
+          "lead generation CTA"
+        ]
       },
       {
-        "name": "Veytis"
+        "name": "Veytis",
+        "industry": "essential oils and hydrosols",
+        "business_model": "B2B wholesale and private label",
+        "target_customers": [
+          "distributors",
+          "private label brands",
+          "importers"
+        ],
+        "common_tasks": [
+          "bulk essential oils GEO 内容",
+          "private label 产品页",
+          "hydrosol supplier 博客",
+          "产品图分析"
+        ],
+        "visual_preferences": [
+          "natural botanical style",
+          "clean product macro"
+        ],
+        "content_preferences": [
+          "compliance-oriented copy",
+          "B2B FAQ and inquiry reply"
+        ]
       }
     ]
   },

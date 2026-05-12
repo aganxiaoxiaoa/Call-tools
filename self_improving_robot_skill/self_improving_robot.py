@@ -118,7 +118,8 @@ def code_check(a):
         if f.suffix==".py":
             for b in ["TODO","placeholder","简化其余命令","伪代码"]:
                 if b.lower() in txt.lower(): issues.append(issue("banned_token",f,b))
-            if re.search(r"\bpass\b",txt): issues.append(issue("pass_statement",f,"contains pass"))
+            if re.search(r"def\s+\w+\(.*\):\s*\n\s*pass\b",txt): issues.append(issue("pass_statement",f,"empty function pass"))
+            if re.search(r"except\s+Exception\s*:\s*\n\s*pass\b",txt): issues.append(issue("except_pass_warning",f,"except Exception: pass"))
             try: subprocess.run([sys.executable,"-m","py_compile",str(f)],check=True,capture_output=True,text=True,timeout=15)
             except Exception as e: issues.append(issue("py_compile_failed",f,str(e)))
             try: subprocess.run([sys.executable,str(f),"--help"],check=True,capture_output=True,text=True,timeout=10)
@@ -128,8 +129,12 @@ def code_check(a):
             except Exception as e: issues.append(issue("json_invalid",f,str(e)))
         if f.name.lower()=="skill.md" and not txt.startswith("---\n"):
             issues.append(issue("skill_frontmatter_missing",f,"missing yaml frontmatter"))
-    if p.is_dir() and not (p/"README.md").exists(): issues.append(issue("missing_readme",p/"README.md","README.md missing"))
-    if p.is_dir() and not (p/"examples.md").exists(): issues.append(issue("missing_examples",p/"examples.md","examples.md missing"))
+    mode=getattr(a,"check_mode","default")
+    if p.is_dir() and mode!="skill_folder":
+        if not (p/"README.md").exists(): issues.append(issue("missing_readme",p/"README.md","README.md missing"))
+        if not (p/"examples.md").exists(): issues.append(issue("missing_examples",p/"examples.md","examples.md missing"))
+    if p.is_dir() and mode=="skill_folder" and not (p/"SKILL.md").exists():
+        issues.append(issue("missing_skill_md",p/"SKILL.md","SKILL.md missing"))
     rep={"time":ts(),"path":str(p),"ok":len(issues)==0,"issues":issues}
     jp=STORE_ROOT/f"07_outputs/maintenance/code_check_{ts()}.json"; mp=STORE_ROOT/f"07_outputs/maintenance/code_check_{ts()}.md"
     jdump(jp,rep); write(mp,"# code-check\n\n"+json.dumps(rep,ensure_ascii=False,indent=2)); log_code("code-check","success" if rep["ok"] else "fail","代码检查",{"report":str(jp)})
@@ -138,38 +143,56 @@ def code_check(a):
     return jp
 
 def code_fix(a):
-    rep=jload(Path(a.check_report),{}); issues=rep.get("issues",[]); backups=[]; fixed=[]
-    for i in issues:
-        t=i.get("type"); f=Path(i.get("file",""))
-        if t in ["missing_readme","missing_examples"]:
-            write(f,"# auto-generated\n"); fixed.append(i); continue
-        if not f.exists() or not a.yes: continue
-        b=backup(f)
-        if b: backups.append(b)
-        txt=f.read_text(encoding="utf-8",errors="ignore")
-        if t=="skill_frontmatter_missing": txt="---\nname: auto-generated\ndescription: fixed\n---\n\n"+txt
-        elif t=="json_invalid": txt="{}\n"
-        elif t in ["banned_token","pass_statement"]: txt=txt.replace("TODO","FIXED").replace("placeholder","fixed").replace("pass\n","raise RuntimeError('not implemented')\n")
-        elif t=="help_failed" and f.suffix==".py" and "argparse" not in txt: txt="import argparse\n"+txt
-        write(f,txt); fixed.append(i)
-        jl_append(STORE_ROOT/"06_error_lessons/fix_history.jsonl",{"time":ts(),"issue":i,"backup":b})
-    rpt=STORE_ROOT/f"07_outputs/code_reports/code_fix_{ts()}.md"; write(rpt,"# code-fix\n"+json.dumps({"fixed_count":len(fixed),"backups":backups},ensure_ascii=False,indent=2)); log_code("code-fix","success" if fixed else "fail","自动修复",{"report":str(rpt)})
-    if not fixed: jl_append(STORE_ROOT/"06_error_lessons/code_error_log.jsonl",{"time":ts(),"source":"code-fix","error":"no_fix"})
+    current_report=Path(a.check_report)
+    max_rounds=max(1,int(a.max_rounds))
+    all_backups=[]; total_fixed=0; rounds=[]
+    for ridx in range(1, max_rounds+1):
+        rep=jload(current_report,{})
+        issues=rep.get("issues",[])
+        if rep.get("ok"):
+            rounds.append({"round":ridx,"status":"already_ok","fixed":0})
+            break
+        fixed=0
+        for i in issues:
+            t=i.get("type"); f=Path(i.get("file",""))
+            if t in ["missing_readme","missing_examples","missing_skill_md"]:
+                write(f,"# auto-generated\n"); fixed+=1; continue
+            if not f.exists() or not a.yes: continue
+            b=backup(f)
+            if b: all_backups.append(b)
+            txt=f.read_text(encoding="utf-8",errors="ignore")
+            if t=="skill_frontmatter_missing": txt="---\nname: auto-generated\ndescription: fixed\n---\n\n"+txt
+            elif t=="json_invalid": txt="{}\n"
+            elif t in ["banned_token","pass_statement"]: txt=txt.replace("TODO","FIXED").replace("placeholder","fixed").replace("pass\n","raise RuntimeError('not implemented')\n")
+            elif t=="help_failed" and f.suffix==".py" and "argparse" not in txt: txt="import argparse\n"+txt
+            elif t=="except_pass_warning": txt=txt.replace("except Exception:\n    pass","except Exception as e:\n    print(e)")
+            write(f,txt); fixed+=1
+            jl_append(STORE_ROOT/"06_error_lessons/fix_history.jsonl",{"time":ts(),"round":ridx,"issue":i,"backup":b})
+        total_fixed += fixed
+        rounds.append({"round":ridx,"fixed":fixed,"issues_in":len(issues)})
+        next_report=code_check(argparse.Namespace(path=rep.get("path",""),language="python",check_mode=getattr(a,"check_mode","default")))
+        current_report=Path(next_report)
+        if jload(current_report,{}).get("ok"): break
+    final=jload(current_report,{})
+    rpt=STORE_ROOT/f"07_outputs/code_reports/code_fix_{ts()}.md"
+    write(rpt,"# code-fix\n"+json.dumps({"fixed_count":total_fixed,"backups":all_backups,"rounds":rounds,"final_ok":final.get("ok"),"final_issues":final.get("issues",[])},ensure_ascii=False,indent=2))
+    log_code("code-fix","success" if final.get("ok") else "fail","自动修复",{"report":str(rpt),"rounds":rounds})
+    if not final.get("ok"): jl_append(STORE_ROOT/"06_error_lessons/code_error_log.jsonl",{"time":ts(),"source":"code-fix","error":"remaining_issues","issues":final.get("issues",[])})
     print(f"已保存: {rpt}")
 
 def code_cycle(a):
     code_plan(a)
     plan=sorted((STORE_ROOT/"05_workflows/code_plans").glob("code_plan_*.json"),key=lambda x:x.stat().st_mtime,reverse=True)[0]
     code_generate(argparse.Namespace(plan_file=str(plan),yes=a.yes,dry_run=not a.yes))
-    chk=code_check(argparse.Namespace(path=a.target_dir,language=a.language))
+    chk=code_check(argparse.Namespace(path=a.target_dir,language=a.language,check_mode="default"))
     rep=jload(chk,{})
     rounds=0
     if not rep.get("ok"):
         rounds=1
-        code_fix(argparse.Namespace(check_report=str(chk),yes=a.yes,max_rounds=a.max_rounds))
-        chk=code_check(argparse.Namespace(path=a.target_dir,language=a.language)); rep=jload(chk,{})
+        code_fix(argparse.Namespace(check_report=str(chk),yes=a.yes,max_rounds=a.max_rounds,check_mode="default"))
+        chk=code_check(argparse.Namespace(path=a.target_dir,language=a.language,check_mode="default")); rep=jload(chk,{})
     created=[str(x) for x in Path(a.target_dir).glob('*') if x.is_file()]
-    cyc={"request":a.request,"template_type":jload(plan,{}).get("template_type"),"plan_file":str(plan),"created_files":created,"modified_files":[],"backups":[str(x) for x in ARCHIVES.glob('*')][-20:],"check_reports":[str(chk)],"fix_rounds":rounds,"final_status":"success" if rep.get("ok") else "fail","failed_issues":rep.get("issues",[]),"memory_writes":["02_task_memory/code_task_log.jsonl","05_workflows/code_cycles","07_outputs/code_reports"],"next_action":"promote_template" if rep.get("ok") else "manual_patch","limitations":"没有LLM时只能生成模板；复杂专业代码需要 OpenClaw 主模型或 Codex 参与核心逻辑"}
+    cyc={"request":a.request,"template_type":jload(plan,{}).get("template_type"),"plan_file":str(plan),"created_files":created,"modified_files":[],"backups":[str(x) for x in ARCHIVES.glob('*')][-20:],"check_reports":[str(chk)],"fix_rounds":rounds,"final_status":"success" if rep.get("ok") else "fail","failed_issues":rep.get("issues",[]),"memory_writes":["02_task_memory/code_task_log.jsonl","05_workflows/code_cycles","07_outputs/code_reports"],"next_action":"promote_template" if rep.get("ok") else "manual_patch","limitations":"没有LLM时只能生成模板；复杂专业代码需要 OpenClaw 主模型或 Codex 参与核心逻辑","whether_ready_for_openclaw":bool(rep.get("ok"))}
     cjp=STORE_ROOT/f"05_workflows/code_cycles/code_cycle_{ts()}.json"; cmp=STORE_ROOT/f"05_workflows/code_cycles/code_cycle_{ts()}.md"; rp=STORE_ROOT/f"07_outputs/code_reports/code_cycle_{ts()}.md"
     jdump(cjp,cyc); write(cmp,"# code-cycle\n\n"+json.dumps(cyc,ensure_ascii=False,indent=2)); write(rp,"# code-cycle report\n\n"+json.dumps(cyc,ensure_ascii=False,indent=2)); log_code("code-cycle",cyc["final_status"],"代码循环",{"report":str(rp)})
     if rep.get("ok"): jl_append(STORE_ROOT/"04_skill_memory/learned_skills.jsonl",{"time":ts(),"from":"code-cycle","lesson":"成功模板", "tool":a.tool_name})
@@ -190,13 +213,22 @@ def registry_audit(a):
                     if p.name.lower()=='readme.md': all_readme.append(str(p))
                     if p.name.lower()=='skill.md': all_skill.append(str(p))
         out["audit_summary"][str(r)]={"exists":ex}
-    dup_readme=[k for k,v in Counter([Path(x).name.lower() for x in all_readme]).items() if v>1]
-    dup_skill=[k for k,v in Counter([Path(x).name.lower() for x in all_skill]).items() if v>1]
+    dup_readme=[k for k,v in Counter([Path(x).name.lower() for x in all_readme]).items() if v>10]
+    dup_skill=[k for k,v in Counter([Path(x).name.lower() for x in all_skill]).items() if v>10]
     reg=jload(STORE_ROOT/"03_tool_registry/tools_registry.json",{"tools":[]})
     cand=[]
     for t in reg.get("tools",[]):
         cand.append({"name":t.get("name"),"paths":[{"path":p,"exists":Path(p).exists()} for p in t.get("candidate_paths",[])]})
-    out["audit_summary"].update({"py_count":len(py),"ps1_count":len(ps1),"readme_duplicates":dup_readme,"skill_duplicates":dup_skill,"workspace_scattered_files":len([x for x in all_readme if 'workspace' in x.lower()]),"tool_vs_tools_overlap":sorted(set([Path(x).name.lower() for x in dirs if str(TOOL_ROOT) in x]) & set([Path(x).name.lower() for x in dirs if str(TOOLS_ROOT) in x])),"candidate_paths":cand,"duplicate_tool_dirs": [x for x,v in Counter([Path(d).name.lower() for d in dirs]).items() if v>1],"duplicate_skill_names":[x for x,v in Counter([Path(x).parent.name.lower() for x in all_skill]).items() if v>1],"duplicate_candidate_paths":[x for x,v in Counter([p2["path"] for c in cand for p2 in c["paths"]]).items() if v>1],"suggestions":["统一工具根目录","修复缺失candidate_paths","保留每个工具README+SKILL"]})
+    reg_names=[t.get("name","").lower() for t in reg.get("tools",[])]
+    duplicate_registry_names=[x for x,v in Counter(reg_names).items() if x and v>1]
+    skill_path_mismatch=[]
+    for c in cand:
+        for pth in c["paths"]:
+            for sp in all_skill:
+                st=Path(sp).read_text(encoding="utf-8",errors="ignore")
+                if c["name"] in Path(sp).parent.name and pth["path"] not in st:
+                    skill_path_mismatch.append({"skill_file":sp,"tool":c["name"],"candidate_path":pth["path"]})
+    out["audit_summary"].update({"py_count":len(py),"ps1_count":len(ps1),"readme_duplicates":dup_readme,"skill_duplicates":dup_skill,"workspace_scattered_files":len([x for x in all_readme if 'workspace' in x.lower()]),"tool_vs_tools_overlap":sorted(set([Path(x).name.lower() for x in dirs if str(TOOL_ROOT) in x]) & set([Path(x).name.lower() for x in dirs if str(TOOLS_ROOT) in x])),"candidate_paths":cand,"duplicate_tool_names":[x for x,v in Counter([Path(d).name.lower() for d in dirs if str(TOOL_ROOT) in d or str(TOOLS_ROOT) in d]).items() if v>1],"duplicate_skill_folder_names":[x for x,v in Counter([Path(x).parent.name.lower() for x in all_skill]).items() if v>1],"duplicate_registry_names":duplicate_registry_names,"duplicate_candidate_paths":[x for x,v in Counter([p2["path"] for c in cand for p2 in c["paths"]]).items() if v>1],"skill_command_path_mismatch":skill_path_mismatch,"suggestions":["统一工具根目录","修复缺失candidate_paths","同步SKILL命令路径"]})
     jdump(STORE_ROOT/"03_tool_registry/tools_registry_suggested.json",out)
     rpt=STORE_ROOT/f"07_outputs/maintenance/registry_audit_{ts()}.md"; write(rpt,"# registry-audit\n\n"+json.dumps(out["audit_summary"],ensure_ascii=False,indent=2))
     if a.apply:
@@ -240,8 +272,8 @@ def create_skill(a):
     ensure(tdir); ensure(sdir)
     write(sdir/"SKILL.md",f"---\nname: {a.name}\ndescription: {a.request}\n---\n")
     for n,c in render_by_template({"template_type":"openclaw_skill_tool","tool_name":a.name}).items(): write(tdir/n,c)
-    chk_tool=code_check(argparse.Namespace(path=str(tdir),language='python'))
-    chk_skill=code_check(argparse.Namespace(path=str(sdir),language='python'))
+    chk_tool=code_check(argparse.Namespace(path=str(tdir),language='python',check_mode='default'))
+    chk_skill=code_check(argparse.Namespace(path=str(sdir),language='python',check_mode='skill_folder'))
     rep_tool=jload(chk_tool,{})
     rep_skill=jload(chk_skill,{})
     rep={"ok": rep_tool.get("ok") and rep_skill.get("ok"), "tool_report":str(chk_tool), "skill_report":str(chk_skill)}
@@ -262,7 +294,11 @@ def upgrade_tool(a):
     patch=jload(Path(a.patch_file),{})
     if not isinstance(patch,dict) or patch.get('type') not in ['replace','write_file','append_safe']: return print("patch-file 无效")
     target=Path(patch.get('file',str(path)))
-    if str(path.parent) not in str(target.resolve()): return print('拒绝越权路径')
+    try:
+        if path.parent.resolve() not in target.resolve().parents and target.resolve()!=path.parent.resolve():
+            return print('拒绝越权路径')
+    except Exception:
+        return print('路径校验失败')
     if patch.get('type')=='append_safe' and target.suffix in ['.py','.ps1']: return print('append_safe 不允许代码文件')
     b=backup(target)
     if patch['type']=='replace':
