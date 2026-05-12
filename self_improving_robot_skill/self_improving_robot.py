@@ -97,7 +97,7 @@ def code_generate(a):
     if not plan: return print("plan-file 无效")
     files=render_by_template(plan); target=Path(plan["target_dir"]); ensure(target)
     created=[]; backups=[]
-    if a.dry_run or not a.yes:
+    if a.dry_run or (not a.yes):
         log_code("code-generate","dry-run","预览",{"target":str(target),"files":list(files.keys())}); print("dry-run"); return
     for n,c in files.items():
         p=target/n; b=backup(p)
@@ -169,7 +169,7 @@ def code_cycle(a):
         code_fix(argparse.Namespace(check_report=str(chk),yes=a.yes,max_rounds=a.max_rounds))
         chk=code_check(argparse.Namespace(path=a.target_dir,language=a.language)); rep=jload(chk,{})
     created=[str(x) for x in Path(a.target_dir).glob('*') if x.is_file()]
-    cyc={"request":a.request,"plan_file":str(plan),"created_files":created,"modified_files":[],"backups":[str(x) for x in ARCHIVES.glob('*')][-20:],"check_reports":[str(chk)],"fix_rounds":rounds,"final_status":"success" if rep.get("ok") else "fail","failed_issues":rep.get("issues",[]),"memory_writes":["02_task_memory/code_task_log.jsonl","05_workflows/code_cycles","07_outputs/code_reports"],"next_action":"promote_template" if rep.get("ok") else "manual_patch"}
+    cyc={"request":a.request,"template_type":jload(plan,{}).get("template_type"),"plan_file":str(plan),"created_files":created,"modified_files":[],"backups":[str(x) for x in ARCHIVES.glob('*')][-20:],"check_reports":[str(chk)],"fix_rounds":rounds,"final_status":"success" if rep.get("ok") else "fail","failed_issues":rep.get("issues",[]),"memory_writes":["02_task_memory/code_task_log.jsonl","05_workflows/code_cycles","07_outputs/code_reports"],"next_action":"promote_template" if rep.get("ok") else "manual_patch","limitations":"没有LLM时只能生成模板；复杂专业代码需要 OpenClaw 主模型或 Codex 参与核心逻辑"}
     cjp=STORE_ROOT/f"05_workflows/code_cycles/code_cycle_{ts()}.json"; cmp=STORE_ROOT/f"05_workflows/code_cycles/code_cycle_{ts()}.md"; rp=STORE_ROOT/f"07_outputs/code_reports/code_cycle_{ts()}.md"
     jdump(cjp,cyc); write(cmp,"# code-cycle\n\n"+json.dumps(cyc,ensure_ascii=False,indent=2)); write(rp,"# code-cycle report\n\n"+json.dumps(cyc,ensure_ascii=False,indent=2)); log_code("code-cycle",cyc["final_status"],"代码循环",{"report":str(rp)})
     if rep.get("ok"): jl_append(STORE_ROOT/"04_skill_memory/learned_skills.jsonl",{"time":ts(),"from":"code-cycle","lesson":"成功模板", "tool":a.tool_name})
@@ -196,7 +196,7 @@ def registry_audit(a):
     cand=[]
     for t in reg.get("tools",[]):
         cand.append({"name":t.get("name"),"paths":[{"path":p,"exists":Path(p).exists()} for p in t.get("candidate_paths",[])]})
-    out["audit_summary"].update({"py_count":len(py),"ps1_count":len(ps1),"readme_duplicates":dup_readme,"skill_duplicates":dup_skill,"workspace_scattered_files":len([x for x in all_readme if 'workspace' in x.lower()]),"tool_vs_tools_overlap":sorted(set([Path(x).name.lower() for x in dirs if str(TOOL_ROOT) in x]) & set([Path(x).name.lower() for x in dirs if str(TOOLS_ROOT) in x])),"candidate_paths":cand,"suggestions":["统一工具根目录","修复缺失candidate_paths","保留每个工具README+SKILL"]})
+    out["audit_summary"].update({"py_count":len(py),"ps1_count":len(ps1),"readme_duplicates":dup_readme,"skill_duplicates":dup_skill,"workspace_scattered_files":len([x for x in all_readme if 'workspace' in x.lower()]),"tool_vs_tools_overlap":sorted(set([Path(x).name.lower() for x in dirs if str(TOOL_ROOT) in x]) & set([Path(x).name.lower() for x in dirs if str(TOOLS_ROOT) in x])),"candidate_paths":cand,"duplicate_tool_dirs": [x for x,v in Counter([Path(d).name.lower() for d in dirs]).items() if v>1],"duplicate_skill_names":[x for x,v in Counter([Path(x).parent.name.lower() for x in all_skill]).items() if v>1],"duplicate_candidate_paths":[x for x,v in Counter([p2["path"] for c in cand for p2 in c["paths"]]).items() if v>1],"suggestions":["统一工具根目录","修复缺失candidate_paths","保留每个工具README+SKILL"]})
     jdump(STORE_ROOT/"03_tool_registry/tools_registry_suggested.json",out)
     rpt=STORE_ROOT/f"07_outputs/maintenance/registry_audit_{ts()}.md"; write(rpt,"# registry-audit\n\n"+json.dumps(out["audit_summary"],ensure_ascii=False,indent=2))
     if a.apply:
@@ -211,6 +211,7 @@ def skill_health(_):
     rows=[]
     for t in reg:
         cps=t.get("candidate_paths",[])
+        missing_candidate_paths = len(cps)==0
         ex=[p for p in cps if Path(p).exists()]
         miss=[p for p in cps if not Path(p).exists()]
         main=Path(ex[0]) if ex else (Path(cps[0]) if cps else Path(""))
@@ -226,8 +227,8 @@ def skill_health(_):
             except Exception: pyc_ok=False
             try: subprocess.run([sys.executable,str(main),'--help'],check=True,capture_output=True,text=True,timeout=10); help_ok=True
             except Exception: help_ok=False
-        score=max(0,10-len(miss)-(0 if readme.exists() else 1)-(0 if skill.exists() else 1)-(0 if pyc_ok is not False else 2)-(0 if help_ok is not False else 1)-len(banned)-int(t.get('paid_api_risk',False))-int(t.get('destructive_risk',False)))
-        rows.append({"name":t.get("name"),"existing_paths":ex,"missing_paths":miss,"selected_main_path":str(main),"readme_exists":readme.exists(),"skill_md_exists":skill.exists(),"py_compile_ok":pyc_ok,"help_ok":help_ok,"banned_tokens":banned,"paid_api_risk":t.get('paid_api_risk'),"destructive_risk":t.get('destructive_risk'),"score":score})
+        score=max(0,10-(2 if missing_candidate_paths else 0)-len(miss)-(0 if readme.exists() else 1)-(0 if skill.exists() else 1)-(0 if pyc_ok is not False else 2)-(0 if help_ok is not False else 1)-len(banned)-int(t.get('paid_api_risk',False))-int(t.get('destructive_risk',False)))
+        rows.append({"name":t.get("name"),"existing_paths":ex,"missing_paths":miss,"selected_main_path":str(main),"readme_exists":readme.exists(),"skill_md_exists":skill.exists(),"py_compile_ok":pyc_ok,"help_ok":help_ok,"banned_tokens":banned,"missing_candidate_paths":missing_candidate_paths,"paid_api_risk":t.get('paid_api_risk'),"destructive_risk":t.get('destructive_risk'),"score":score,"recommendation":"补全candidate_paths" if missing_candidate_paths else "继续维护"})
     avg=round(sum([x['score'] for x in rows])/max(1,len(rows)),2)
     jdump(STORE_ROOT/"03_tool_registry/tool_health.json",{"updated_at":ts(),"score":avg,"tools":rows})
     rpt=STORE_ROOT/f"07_outputs/maintenance/skill_health_{ts()}.md"; write(rpt,"# skill-health\n\n"+json.dumps({"score":avg,"tools":rows},ensure_ascii=False,indent=2)); print(f"已保存: {rpt}")
@@ -239,11 +240,14 @@ def create_skill(a):
     ensure(tdir); ensure(sdir)
     write(sdir/"SKILL.md",f"---\nname: {a.name}\ndescription: {a.request}\n---\n")
     for n,c in render_by_template({"template_type":"openclaw_skill_tool","tool_name":a.name}).items(): write(tdir/n,c)
-    chk=code_check(argparse.Namespace(path=str(tdir),language='python'))
-    rep=jload(chk,{})
+    chk_tool=code_check(argparse.Namespace(path=str(tdir),language='python'))
+    chk_skill=code_check(argparse.Namespace(path=str(sdir),language='python'))
+    rep_tool=jload(chk_tool,{})
+    rep_skill=jload(chk_skill,{})
+    rep={"ok": rep_tool.get("ok") and rep_skill.get("ok"), "tool_report":str(chk_tool), "skill_report":str(chk_skill)}
     reg=jload(STORE_ROOT/"03_tool_registry/tools_registry.json",{"tools":[]}); reg.setdefault("tools",[]).append({"name":a.name,"candidate_paths":[str(tdir/f"{a.name}.py")],"description":a.request,"command_examples":[f'py "{tdir/(a.name+".py")}" --help'],"intents":["generated"],"risk_level":"low","requires_media":False,"requires_api_key":False,"paid_api_risk":False,"destructive_risk":False}); jdump(STORE_ROOT/"03_tool_registry/tools_registry.json",reg)
     jl_append(STORE_ROOT/"04_skill_memory/generated_skills.jsonl",{"time":ts(),"name":a.name,"status":"ok" if rep.get('ok') else "check_failed"})
-    rpt=STORE_ROOT/f"07_outputs/code_reports/create_skill_{ts()}.md"; write(rpt,"# create-skill\n\n"+json.dumps({"check_ok":rep.get('ok'),"report":str(chk)},ensure_ascii=False,indent=2)); log_code("create-skill","success" if rep.get('ok') else "fail","创建技能",{"report":str(rpt)})
+    rpt=STORE_ROOT/f"07_outputs/code_reports/create_skill_{ts()}.md"; write(rpt,"# create-skill\n\n"+json.dumps({"check_ok":rep.get('ok'),"tool_report":str(chk_tool),"skill_report":str(chk_skill)},ensure_ascii=False,indent=2)); log_code("create-skill","success" if rep.get('ok') else "fail","创建技能",{"report":str(rpt)})
     print(f"已保存: {rpt}")
 
 def upgrade_tool(a):
@@ -256,20 +260,46 @@ def upgrade_tool(a):
     plan_file=STORE_ROOT/f"07_outputs/code_reports/upgrade_plan_{ts()}.json"; jdump(plan_file,plan)
     if not getattr(a,'patch_file',None): log_code("upgrade-tool","planned","仅生成升级计划",{"plan":str(plan_file)}); return print(f"已保存: {plan_file}")
     patch=jload(Path(a.patch_file),{})
-    if not isinstance(patch,dict) or not patch.get('append_text'): return print("patch-file 无效")
-    b=backup(path); write(path,path.read_text(encoding='utf-8',errors='ignore')+"\n"+patch['append_text']+"\n")
+    if not isinstance(patch,dict) or patch.get('type') not in ['replace','write_file','append_safe']: return print("patch-file 无效")
+    target=Path(patch.get('file',str(path)))
+    if str(path.parent) not in str(target.resolve()): return print('拒绝越权路径')
+    if patch.get('type')=='append_safe' and target.suffix in ['.py','.ps1']: return print('append_safe 不允许代码文件')
+    b=backup(target)
+    if patch['type']=='replace':
+        txt=target.read_text(encoding='utf-8',errors='ignore'); write(target, txt.replace(patch.get('find',''), patch.get('replace','')))
+    elif patch['type']=='write_file':
+        write(target, patch.get('content',''))
+    else:
+        write(target, target.read_text(encoding='utf-8',errors='ignore') + '\n' + patch.get('append','') + '\n')
     chk=code_check(argparse.Namespace(path=str(path.parent),language='python')); rep=jload(chk,{})
     status="success" if rep.get('ok') else "fail"
     rpt=STORE_ROOT/f"07_outputs/code_reports/upgrade_tool_{ts()}.md"; write(rpt,"# upgrade-tool\n\n"+json.dumps({"status":status,"backup":b,"check":str(chk)},ensure_ascii=False,indent=2))
     log_code("upgrade-tool",status,"升级执行",{"report":str(rpt)})
-    if not rep.get('ok'): jl_append(STORE_ROOT/"06_error_lessons/code_error_log.jsonl",{"time":ts(),"source":"upgrade-tool","report":str(chk)})
+    if not rep.get('ok'): jl_append(STORE_ROOT/"06_error_lessons/code_error_log.jsonl",{"time":ts(),"source":"upgrade-tool","tool_report":str(chk_tool),"skill_report":str(chk_skill)})
     print(f"已保存: {rpt}")
 
 # minimal legacy memory commands
 
 def remember_task(a): jl_append(STORE_ROOT/"02_task_memory/task_log.jsonl",vars(a)); print("已记录")
-def review(a): write(STORE_ROOT/f"07_outputs/summaries/review_{ts()}.md", json.dumps(jl_read(STORE_ROOT/"02_task_memory/task_log.jsonl")[-a.limit:], ensure_ascii=False, indent=2)); print("review 完成")
-def learn(_): jl_append(STORE_ROOT/"04_skill_memory/learned_skills.jsonl",{"time":ts(),"lesson":"periodic learn"}); print("learn 完成")
+def review(a):
+    tasks=jl_read(STORE_ROOT/"02_task_memory/task_log.jsonl")[-a.limit:]
+    code_tasks=jl_read(STORE_ROOT/"02_task_memory/code_task_log.jsonl")
+    status={"success":0,"fail":0,"partial":0}
+    actions={}
+    for t in tasks: status[t.get("status","partial")]=status.get(t.get("status","partial"),0)+1
+    for t in code_tasks: actions[t.get("action","unknown")]=actions.get(t.get("action","unknown"),0)+1
+    errs=jl_read(STORE_ROOT/"06_error_lessons/code_error_log.jsonl")[-5:]
+    rpt={"recent_tasks":len(tasks),"status":status,"code_task_log_count":len(code_tasks),"recent_failed_issues":errs,"top_actions":sorted(actions.items(), key=lambda x:x[1], reverse=True)[:5]}
+    write(STORE_ROOT/f"07_outputs/summaries/review_{ts()}.md", json.dumps(rpt, ensure_ascii=False, indent=2)); print("review 完成")
+def learn(_):
+    errs=jl_read(STORE_ROOT/"06_error_lessons/code_error_log.jsonl")
+    fixes=jl_read(STORE_ROOT/"06_error_lessons/fix_history.jsonl")
+    et={}; fa={}
+    for e in errs:
+        for i in e.get("issues",[]): et[i.get("type","unknown")]=et.get(i.get("type","unknown"),0)+1
+    for f in fixes: fa[f.get("issue",{}).get("type","unknown")]=fa.get(f.get("issue",{}).get("type","unknown"),0)+1
+    rec={"time":ts(),"common_error_types":et,"common_fix_actions":fa,"avoid_repeat":["先code-check后code-fix","路径与frontmatter先修复"]}
+    jl_append(STORE_ROOT/"04_skill_memory/learned_skills.jsonl",rec); print("learn 完成")
 def propose_skill(a): jl_append(STORE_ROOT/"04_skill_memory/skill_candidates.jsonl",{"time":ts(),"idea":a.idea}); print("propose 完成")
 def gen_prompt(a): write(STORE_ROOT/f"04_skill_memory/codex_prompts/{ts()}_codex_prompt.md",a.goal); print("prompt 已保存")
 def anti(a): write(STORE_ROOT/f"07_outputs/reports/anti_hallucination_{ts()}.md",a.answer); print("anti 完成")
@@ -302,7 +332,7 @@ def build():
     ap=s.add_parser('automation-plan'); ap.add_argument('--task',required=True); ap.add_argument('--frequency',default='manual'); ap.add_argument('--risk',default='medium'); ap.add_argument('--create-task',action='store_true')
     s.add_parser('run-due'); s.add_parser('export-system-context'); s.add_parser('snapshot')
     cp=s.add_parser('code-plan'); cp.add_argument('--request',required=True); cp.add_argument('--target-dir',required=True); cp.add_argument('--tool-name',required=True); cp.add_argument('--language',default='python'); cp.add_argument('--risk',default='medium')
-    cg=s.add_parser('code-generate'); cg.add_argument('--plan-file',required=True); cg.add_argument('--yes',action='store_true'); cg.add_argument('--dry-run',action='store_true',default=True)
+    cg=s.add_parser('code-generate'); cg.add_argument('--plan-file',required=True); cg.add_argument('--yes',action='store_true'); cg.add_argument('--dry-run',action='store_true')
     cc=s.add_parser('code-check'); cc.add_argument('--path',required=True); cc.add_argument('--language',default='python')
     cf=s.add_parser('code-fix'); cf.add_argument('--check-report',required=True); cf.add_argument('--yes',action='store_true'); cf.add_argument('--max-rounds',type=int,default=3)
     cy=s.add_parser('code-cycle'); cy.add_argument('--request',required=True); cy.add_argument('--target-dir',required=True); cy.add_argument('--tool-name',required=True); cy.add_argument('--language',default='python'); cy.add_argument('--yes',action='store_true'); cy.add_argument('--max-rounds',type=int,default=3)

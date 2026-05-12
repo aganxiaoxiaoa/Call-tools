@@ -17,3 +17,5 @@ description: Long-term memory, autonomous code writing, code validation, self-fi
 3. 不调用付费 API。
 4. 高风险操作仅建议并要求确认。
 5. 路径有空格必须加引号。
+
+能力边界：本 Skill 不是独立大模型；负责计划、落盘、备份、检查、修复常见错误、写入长期记忆。复杂业务逻辑代码需 OpenClaw 主模型/Codex 生成核心内容。
