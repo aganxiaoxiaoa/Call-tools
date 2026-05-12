@@ -22,8 +22,8 @@
     "brands": [
       {
         "name": "Juese Clothing",
-        "industry": "garment manufacturing",
-        "business_model": "B2B OEM/ODM wholesale",
+        "industry": "custom garment factory",
+        "business_model": "B2B custom clothing manufacturing",
         "target_customers": [
           "apparel brands",
           "wholesalers",
@@ -36,18 +36,26 @@
           "客户询盘英文回复"
         ],
         "visual_preferences": [
-          "production floor realism",
-          "clean industrial lighting"
+          "documentary realism",
+          "clean factory",
+          "cool neutral lighting",
+          "no AI artifacts"
         ],
         "content_preferences": [
-          "technical capability proof",
-          "lead generation CTA"
+          "factory capability proof",
+          "MOQ/lead-time clarity",
+          "quotation conversion focus"
+        ],
+        "avoid_rules": [
+          "avoid fake glossy CGI look",
+          "avoid inconsistent garment details",
+          "avoid vague process claims"
         ]
       },
       {
         "name": "Veytis",
-        "industry": "essential oils and hydrosols",
-        "business_model": "B2B wholesale and private label",
+        "industry": "essential oils, hydrosol, aromatherapy, private label",
+        "business_model": "B2B wholesale / OEM / ODM",
         "target_customers": [
           "distributors",
           "private label brands",
@@ -60,12 +68,22 @@
           "产品图分析"
         ],
         "visual_preferences": [
-          "natural botanical style",
-          "clean product macro"
+          "neutral white",
+          "cool ivory",
+          "pale stone",
+          "cool greige",
+          "no yellow cast",
+          "no red cast"
         ],
         "content_preferences": [
-          "compliance-oriented copy",
-          "B2B FAQ and inquiry reply"
+          "technical B2B product clarity",
+          "compliance-aware copy",
+          "inquiry conversion focus"
+        ],
+        "avoid_rules": [
+          "avoid warm/yellow cast visuals",
+          "avoid exaggerated medical claims",
+          "avoid consumer-only tone"
         ]
       }
     ]
