@@ -72,7 +72,7 @@ def code_plan(a):
     init_store(False)
     t=detect_template(a.request)
     files=[f"{a.tool_name}.py","README.md","examples.md"] + (["SKILL.md"] if t=="openclaw_skill_tool" else [])
-    plan={"request":a.request,"tool_name":a.tool_name,"target_dir":a.target_dir,"language":a.language,"template_type":t,"files_to_create":files,"files_to_modify":[],"required_arguments":["--input","--output-dir","--json"] if t=="cli_tool" else ["--name"],"output_contract":{"stdout":"human+json summary"},"test_commands":[f'py "{a.target_dir}\\{a.tool_name}.py" --help'] ,"acceptance_criteria":["files created","py_compile ok","help ok"],"risk_level":"low" if "test" in a.request.lower() else "medium","memory_writes":["05_workflows/code_plans","02_task_memory/code_task_log.jsonl"]}
+    plan={"request":a.request,"tool_name":a.tool_name,"target_dir":a.target_dir,"language":a.language,"template_type":t,"files_to_create":files,"files_to_modify":[],"required_arguments":["--input","--output-dir","--json"] if t=="cli_tool" else ["--name"],"output_contract":{"stdout":"human+json summary"},"test_commands":[f'py "{a.target_dir}\\{a.tool_name}.py" --help'] ,"acceptance_criteria":["files created","py_compile ok","help ok"],"risk_level":"low" if "test" in a.request.lower() else "medium","memory_writes":["05_workflows/code_plans","02_task_memory/code_task_log.jsonl"],"llm_note":"复杂业务逻辑需要 OpenClaw 主模型/Codex 参与生成核心逻辑；本工具负责模板落盘、检查、修复、记忆"}
     jp=STORE_ROOT/f"05_workflows/code_plans/code_plan_{ts()}.json"; mp=STORE_ROOT/f"05_workflows/code_plans/code_plan_{ts()}.md"
     jdump(jp,plan); write(mp,"# code-plan\n\n"+json.dumps(plan,ensure_ascii=False,indent=2)); log_code("code-plan","success","计划已生成",{"plan":str(jp)})
     print(f"已保存: {jp}\n已保存: {mp}")
@@ -276,9 +276,17 @@ def anti(a): write(STORE_ROOT/f"07_outputs/reports/anti_hallucination_{ts()}.md"
 def err(a): jl_append(STORE_ROOT/"06_error_lessons/error_log.jsonl",{"time":ts(),"error":a.error,"context":a.context}); print("error 已记录")
 def daily(a): jdump(STORE_ROOT/"05_workflows/daily_ops_plan.json",{"date":ts('%Y-%m-%d'),"brand":a.brand,"industry":a.industry}); print("daily 完成")
 def auto(a): jl_append(STORE_ROOT/"05_workflows/automation_queue.jsonl",{"time":ts(),"task":a.task,"frequency":a.frequency,"risk":a.risk}); print("automation 完成")
-def due(_): print("run-due 完成")
-def export(_): write(STORE_ROOT/f"07_outputs/exports/system_context_{ts()}.md","context"); print("export 完成")
-def snap(_): jdump(STORE_ROOT/f"07_outputs/snapshots/snapshot_{ts()}.json",{"time":ts()}); print("snapshot 完成")
+def due(_):
+    q=jl_read(STORE_ROOT/"05_workflows/automation_queue.jsonl")
+    for x in q: jl_append(STORE_ROOT/"05_workflows/workflow_runs.jsonl",{"time":ts(),"task":x.get("task"),"status":"queued"})
+    print("run-due 完成")
+def export(_):
+    seed=load_seed()
+    txt="# system context\n\n"+json.dumps({"business":seed.get("business_profile"),"brands":seed.get("brand_profiles"),"tools":seed.get("tools_registry")},ensure_ascii=False,indent=2)
+    write(STORE_ROOT/f"07_outputs/exports/system_context_{ts()}.md",txt); print("export 完成")
+def snap(_):
+    files=[str(x) for x in STORE_ROOT.rglob("*") if x.is_file()] if STORE_ROOT.exists() else []
+    jdump(STORE_ROOT/f"07_outputs/snapshots/snapshot_{ts()}.json",{"time":ts(),"file_count":len(files),"recent_outputs":files[-20:]}); print("snapshot 完成")
 
 def build():
     p=argparse.ArgumentParser(description="self_improving_robot")
