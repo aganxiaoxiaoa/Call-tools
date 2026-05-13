@@ -4,27 +4,27 @@ description: Local B2B independent-site marketing tool for GEO/SEO, blogs, landi
 ---
 
 ## Trigger rules
-When user asks any of the following, call the local CLI directly:
-- 写博客 / 博客简报 -> `blog-brief`
-- 写博客初稿 / B2B SEO 博客 -> `blog-draft`
-- GEO 内容计划 / GEO+SEO -> `geo-plan --geo-type both`
-- 写落地页 -> `landing-page`
-- 写产品页 -> `product-page`
-- 写服务页 -> `service-page`
-- 短视频脚本 -> `video-script`
-- 图片提示词 -> `image-prompt`
-- 客户询盘回复 / 英文回复 -> `inquiry-reply`
-- FAQ -> `faq`
-- 30天内容计划 -> `content-calendar`
-- 广告关键词计划 -> `ad-keyword-plan`
-- 否定关键词 -> `negative-keywords`
-- SEO title/meta -> `seo-meta`
-- 一键全套内容 -> `prompt-pack`
+- 用户说“写博客/博客初稿” -> `blog-draft`
+- 用户说“博客大纲/简报” -> `blog-brief`
+- 用户说“GEO/地理SEO/AI搜索优化” -> `geo-plan`
+- 用户说“落地页” -> `landing-page`
+- 用户说“产品页” -> `product-page`
+- 用户说“服务页” -> `service-page`
+- 用户说“视频脚本/短视频脚本” -> `video-script`
+- 用户说“图片提示词” -> `image-prompt`
+- 用户说“客户询盘/英文回复” -> `inquiry-reply`
+- 用户说“FAQ” -> `faq`
+- 用户说“内容日历” -> `content-calendar`
+- 用户说“广告关键词/Google Ads关键词” -> `ad-keyword-plan`
+- 用户说“否定关键词” -> `negative-keywords`
+- 用户说“SEO title/meta” -> `seo-meta`
+- 用户说“一键全套” -> `prompt-pack`
 
-## Preferred call pattern
+## Preferred command
 `py "D:\bot\tool\Business tools\b2b_marketing_tool.py" <subcommand> ...`
 
-## Safety notes
-- No paid API calls.
-- Do not fabricate certifications, price, lead time, capacity, or client cases.
-- Use `[verify]` / `available upon request` / `depending on order details` for uncertain items.
+## Safety rules
+- 不编造认证、产能、价格、交期、客户案例。
+- 不确定信息必须标注 `[verify]`，或使用 `available upon request` / `depending on order details`。
+- 文件输出以最后一行 `FILE:file:///...` 为准。
+- 不调用付费 API。
