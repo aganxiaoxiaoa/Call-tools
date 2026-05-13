@@ -3,11 +3,30 @@ name: image-analysis-skill
 description: Unified local and optional vision-model image analysis for product photos, factory scenes, brand visuals, people/scene details, graphic design, and style consistency.
 ---
 
-这是图片分析 Skill，不是 self-improving-robot。
+当用户发送图片并说以下任一意图时，优先调用本工具：
+- 全面分析这张图
+- 分析产品比例
+- 分析瓶子高度
+- 分析标签比例
+- 分析场景细节
+- 分析人物细节
+- 分析品牌设计
+- 分析平面设计
+- 分析文字排版
+- 分析风格统一
+- 分析 Veytis 产品图
+- 分析 Juese Clothing 工厂图
+- 看这张图是否适合独立站
+- 生成这张图的修改提示词
 
-当用户要求分析图片、产品图、场景图、人物细节、品牌设计、平面设计、风格统一、Veytis 产品图、Juese 工厂图时，调用：
-
+默认调用：
 `py "D:\bot\tool\image_analysis_skill\image_analysis_tool.py" --image "{{MediaPath}}" --mode full`
 
-默认本地分析；深度语义/人物细节/标签文字/场景物体识别需要 `--use-vision`。
-视觉模型失败时自动回退本地分析并继续输出 Markdown + JSON。
+Veytis 产品图：
+`py "D:\bot\tool\image_analysis_skill\image_analysis_tool.py" --image "{{MediaPath}}" --brand "Veytis" --mode full --object-type bottle`
+
+Juese Clothing 工厂图：
+`py "D:\bot\tool\image_analysis_skill\image_analysis_tool.py" --image "{{MediaPath}}" --brand "Juese Clothing" --scene-type "factory_scene" --mode full --analysis-depth deep`
+
+平面设计：
+`py "D:\bot\tool\image_analysis_skill\image_analysis_tool.py" --image "{{MediaPath}}" --mode graphic-design --use-case "homepage hero"`
