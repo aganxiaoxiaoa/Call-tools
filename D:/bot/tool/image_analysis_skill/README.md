@@ -1,23 +1,26 @@
-# image_analysis_skill
+# image_analysis_skill（唯一正式路径）
 
-## 本地模式（默认，不调用 API）
-可分析：几何、色彩、主体比例、裁切、留白、风格一致性、品牌适配、平面排版、商业适配度。
+- 工具路径：`D:\bot\tool\image_analysis_skill\image_analysis_tool.py`
+- Skill 路径：`C:\Users\Administrator\.openclaw\workspace\skills\image_analysis_skill\SKILL.md`
 
-## 视觉模型模式（可选）
-场景语义、人物细节、物体识别、标签文字建议使用 `--use-vision`。
-若 Gemini/Qwen/OpenAI 接口失败或配额不足（401/429/timeout），会自动回退本地分析。
-> 注意：Gemini/Qwen/OpenAI API 可能有费用或配额限制；本工具默认不调用 API。
+## 本地模式可分析
+几何、色彩、主体比例、裁切、留白、品牌规则、平面设计建议、商业适配、参考高度对比。
 
-## 品牌规则
-- Veytis：neutral cool tone、避免黄/红/橙偏色、瓶型与标签真实。
-- Juese Clothing：工厂纪实感、整洁明亮、流程真实、避免假设备/脏乱。
+## 视觉模式可分析（`--use-vision`）
+场景语义、人物细节、物体清单、标签文字、产品语义。
 
-## 命令示例
+## 视觉模型说明
+- 已实现：`qwen`（需 `DASHSCOPE_API_KEY`，可选 `DASHSCOPE_BASE_URL`，默认 `https://dashscope.aliyuncs.com/compatible-mode/v1`）。
+- 待扩展：`gemini` / `openai` / `local`。
+- 默认不调用 API；API 可能有费用或配额限制。
+- 若 401/429/timeout/配额不足，自动回退本地分析，不中断。
+
+## 命令
 ```bash
-py "D:\bot\tool\image_analysis_skill\image_analysis_tool.py" --image "D:\bot\test\factory.jpg" --brand "Juese Clothing" --scene-type "factory_scene" --mode full --analysis-depth deep
-py "D:\bot\tool\image_analysis_skill\image_analysis_tool.py" --image "D:\bot\test\scene.jpg" --mode semantic-full --scene-type "factory_scene" --detect-people
+py "D:\bot\tool\image_analysis_skill\image_analysis_tool.py" --help
 py "D:\bot\tool\image_analysis_skill\image_analysis_tool.py" --image "D:\bot\test\veytis.png" --brand "Veytis" --mode full --object-type bottle
+py "D:\bot\tool\image_analysis_skill\image_analysis_tool.py" --image "D:\bot\test\factory.jpg" --brand "Juese Clothing" --scene-type "factory_scene" --mode full --analysis-depth deep
 py "D:\bot\tool\image_analysis_skill\image_analysis_tool.py" --image "D:\bot\test\banner.jpg" --mode graphic-design --use-case "homepage hero"
-py "D:\bot\tool\image_analysis_skill\image_analysis_tool.py" --image "D:\bot\test\new.png" --reference-dir "D:\bot\references\veytis" --brand "Veytis" --mode style-consistency
+py "D:\bot\tool\image_analysis_skill\image_analysis_tool.py" --image "D:\bot\test\new.png" --reference "D:\bot\test\old.png" --expected-height-change "-25%" --mode product-geometry --object-type bottle
 py "D:\bot\tool\image_analysis_skill\image_analysis_tool.py" --image "D:\bot\test\factory.jpg" --mode semantic-full --use-vision --vision-provider qwen --vision-model qwen-vl-plus
 ```
