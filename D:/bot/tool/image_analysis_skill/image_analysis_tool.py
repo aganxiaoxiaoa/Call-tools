@@ -88,10 +88,10 @@ def run_vision_analysis(image_path,prompt,provider,model):
 def main():
     p=argparse.ArgumentParser()
     p.add_argument('--image',required=True); p.add_argument('--brand',default='Generic'); p.add_argument('--industry',default=''); p.add_argument('--use-case',default='product photo',dest='use_case')
-    p.add_argument('--mode',default='full',choices=['scene-detail','people-detail','semantic-full','brand-full','commercial-qc','style-consistency','graphic-design','product-geometry','full'])
+    p.add_argument('--mode',default='full',choices=['basic','full','product-geometry','scene-detail','people-detail','semantic-full','brand-design','brand-full','graphic-design','style-consistency','commercial-qc','qc','prompt'])
     p.add_argument('--analysis-depth',default='standard',choices=['basic','standard','deep'])
-    p.add_argument('--scene-type',default='generic',choices=['product_photo','factory_scene','showroom','office','warehouse','workshop','poster','banner','social_post','website_hero','generic'])
-    p.add_argument('--object-type',default='generic',choices=['bottle','jar','box','garment','factory','poster','banner','generic'])
+    p.add_argument('--scene-type',default='generic',choices=['product_photo','factory_scene','sample_room','printing_workshop','warehouse','showroom','office','poster','banner','social_post','website_hero','generic'])
+    p.add_argument('--object-type',default='generic',choices=['bottle','jar','box','garment','factory','machine','poster','banner','generic'])
     p.add_argument('--reference'); p.add_argument('--reference-dir'); p.add_argument('--expected-height-change'); p.add_argument('--text'); p.add_argument('--ratio')
     p.add_argument('--use-alpha',action='store_true'); p.add_argument('--use-vision',action='store_true'); p.add_argument('--vision-provider',default='none',choices=['none','qwen','gemini','openai','local'])
     p.add_argument('--vision-model',default=''); p.add_argument('--ocr',action='store_true'); p.add_argument('--detect-people',action='store_true',default=True)
@@ -164,7 +164,7 @@ def main():
     scores['总分']=round(sum(scores.values())/len(scores),2)
 
     out={'image_info':{'file':str(ip),'size':f'{w}x{h}','brand':a.brand,'scene_type':a.scene_type,'mode':a.mode,'analysis_depth':a.analysis_depth},'local_geometry':g,
-         'scene_detail':scene,'people_detail':people,'object_inventory':obj_inv,'product_analysis':pa,'brand_design_analysis':{'tone':'中高','notes':brand_notes,'veytis_rules':'已检查' if a.brand.lower()=='veytis' else 'n/a','juese_rules':'已检查' if 'juese' in a.brand.lower() else 'n/a'},
+         'scene_detail':scene,'people_detail':people,'object_inventory':obj_inv,'product_analysis':pa,'product_semantic_analysis':{'status':'需要视觉模型确认' if not vision_status['success'] else '已由视觉模型补充'},'brand_design_analysis':{'tone':'中高','notes':brand_notes,'veytis_rules':'已检查' if a.brand.lower()=='veytis' else 'n/a','juese_rules':'已检查' if 'juese' in a.brand.lower() else 'n/a'},
          'graphic_design_analysis':gd,'style_consistency':style,'ai_qc':ai_qc,'business_fit':business,'reference_comparison':rc,'semantic_analysis':semantic,
          'prompts':prompts,'scores':scores,'confidence':{'subject_detection':conf,'local_only':not vision_status['success'],'semantic_reliability':'low' if not vision_status['success'] else 'medium/high'},'vision_model_status':vision_status}
 
