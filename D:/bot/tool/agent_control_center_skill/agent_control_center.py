@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-import argparse, json, os, re, shutil, subprocess
+import argparse, json, os, re, shutil, subprocess, sys
 from datetime import datetime
 from pathlib import Path
 
@@ -41,7 +41,9 @@ def tool_status(t):
 
 def run_help(path):
     if not exists(path): return False,"script not found"
-    if path.lower().endswith(".py"): cmd=["python3",path,"--help"]
+    if path.lower().endswith(".py"):
+        py_exec = "py" if shutil.which("py") else sys.executable
+        cmd=[py_exec,path,"--help"]
     elif path.lower().endswith(".ps1"): return False,"powershell help check skipped"
     else: return False,"help not applicable"
     try:
@@ -227,7 +229,7 @@ def cmd_generate_verification(args):
         cmds=[f"Test-Path {q(sp)}",f"Test-Path {q(rp)}",f"Test-Path {q(kp)}",f"py {q(sp)} --help",f"py {q(sp)} product-page --brand Veytis --product \"bulk lavender essential oil\"",f"py {q(sp)} negative-keywords --campaign \"lavender oil\"",f"py {q(sp)} inquiry-reply --input inquiry.txt"]
     elif t=="image_analysis_skill":
         sp=r"D:\bot\tool\image_analysis_skill\image_analysis_tool.py"; rp=r"D:\bot\tool\image_analysis_skill\README.md"; kp=r"C:\Users\Administrator\.openclaw\workspace\skills\image_analysis_skill\SKILL.md"
-        cmds=[f"Test-Path {q(sp)}",f"Test-Path {q(rp)}",f"Test-Path {q(kp)}",f"py {q(sp)} --help",f"py {q(sp)} full --image \"D:\\bot\\samples\\product.jpg\"",f"py {q(sp)} semantic-full --image \"D:\\bot\\samples\\product.jpg\""]
+        cmds=[f"Test-Path {q(sp)}",f"Test-Path {q(rp)}",f"Test-Path {q(kp)}",f"py {q(sp)} --help",f"py {q(sp)} --image \"D:\\bot\\samples\\product.jpg\" --mode full",f"py {q(sp)} --image \"D:\\bot\\samples\\product.jpg\" --mode semantic-full"]
     else:
         sp=r"D:\bot\tool\agent_control_center_skill\agent_control_center.py"; rp=r"D:\bot\tool\agent_control_center_skill\README.md"; kp=r"C:\Users\Administrator\.openclaw\workspace\skills\agent_control_center_skill\SKILL.md"
         cmds=[f"Test-Path {q(sp)}",f"Test-Path {q(rp)}",f"Test-Path {q(kp)}",f"py {q(sp)} --help",f"py {q(sp)} status",f"py {q(sp)} doctor",f"py {q(sp)} route --user-message \"Create product page\""]
