@@ -156,10 +156,11 @@ def parser():
     for c in CMDS:
         s=sp.add_parser(c); add_common(s)
         if c in ["blog-brief","blog-draft","video-script","prompt-pack","seo-meta"]: s.add_argument("--topic")
-        if c in ["blog-brief","blog-draft"]: s.add_argument("--intent",default="commercial")
+        if c in ["blog-brief","blog-draft","prompt-pack"]: s.add_argument("--intent",default="commercial")
         if c=="geo-plan": s.add_argument("--geo-type",choices=["generative","geographic","both"],default="both")
         if c=="video-script": s.add_argument("--platform",default="TikTok"); s.add_argument("--duration",default="30s"); s.add_argument("--style",default="realistic"); s.add_argument("--no-subtitles",default="false"); s.add_argument("--assets",default="")
         if c=="image-prompt": s.add_argument("--scene",default="product photo"); s.add_argument("--style",default="realistic"); s.add_argument("--ratio",default="1:1")
+        if c=="prompt-pack": s.add_argument("--platform",default="TikTok"); s.add_argument("--duration",default="30s"); s.add_argument("--style",default="realistic"); s.add_argument("--no-subtitles",dest="no_subtitles",default="false"); s.add_argument("--assets",default=""); s.add_argument("--scene",default="product photo"); s.add_argument("--ratio",default="1:1")
         if c=="inquiry-reply": s.add_argument("--customer-message",required=True)
     return p
 
