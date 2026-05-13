@@ -77,7 +77,7 @@ def main():
     p.add_argument('--object-type',default='generic',choices=['bottle','jar','box','garment','factory','machine','poster','banner','generic'])
     p.add_argument('--reference'); p.add_argument('--reference-dir'); p.add_argument('--expected-height-change'); p.add_argument('--text'); p.add_argument('--ratio'); p.add_argument('--use-alpha',action='store_true')
     p.add_argument('--use-vision',action='store_true'); p.add_argument('--vision-provider',default='none',choices=['none','qwen','gemini','openai','local']); p.add_argument('--vision-model',default='')
-    p.add_argument('--ocr',action='store_true'); p.add_argument('--detect-people',action='store_true',default=True); p.add_argument('--detect-products',action='store_true',default=True); p.add_argument('--detect-layout',action='store_true',default=True)
+    p.add_argument('--ocr',action='store_true'); p.add_argument('--output-dir',default='D:/bot/outputs/image_analysis'); p.add_argument('--json',action='store_true',help='仅输出JSON到stdout(仍写文件)'); p.add_argument('--detect-people',action='store_true',default=True); p.add_argument('--detect-products',action='store_true',default=True); p.add_argument('--detect-layout',action='store_true',default=True)
     a=p.parse_args(); ip=Path(a.image)
     if not ip.exists(): print(f'错误：图片不存在：{ip}',file=sys.stderr); sys.exit(1)
 
@@ -127,10 +127,12 @@ def main():
         "## 12. 参考图对比",f"- {rc or '未提供'}","## 13. 可本地确定的问题",f"- {', '.join(out['ai_qc']['local_confirmed'])}","## 14. 需要视觉模型确认的问题",f"- {', '.join(out['ai_qc']['need_vision'])}",
         "## 15. 具体修改建议","- 控制主体占比在55%-82%\n- 降低偏黄/偏红\n- 增加文字安全区","## 16. 重新生成提示词",f"- {out['prompts']['regenerate']}","## 17. 局部修图提示词",f"- {out['prompts']['inpaint']}","## 18. 评分",*(f"- {k}：{v}" for k,v in scores.items())]
 
-    t=dt.datetime.now().strftime('%Y%m%d-%H%M%S'); od=Path(f'D:/bot/outputs/image_analysis/{t}'); od.mkdir(parents=True,exist_ok=True)
+    t=dt.datetime.now().strftime('%Y%m%d-%H%M%S'); od=Path(a.output_dir)/t; od.mkdir(parents=True,exist_ok=True)
     mdp=od/'image_analysis_report.md'; jsp=od/'image_analysis_report.json'
     mdp.write_text('\n'.join(md),encoding='utf-8'); jsp.write_text(json.dumps(out,ensure_ascii=False,indent=2),encoding='utf-8')
-    print(f"分析完成：{ip.name} | 总分 {scores['总分']}/10"); print(f"Markdown 报告：{mdp}"); print(f"JSON 报告：{jsp}"); print(f"FILE:file:///{mdp.as_posix()}")
+    print(f"分析完成：{ip.name} | 总分 {scores['总分']}/10"); print(f"Markdown 报告：{mdp}"); print(f"JSON 报告：{jsp}");
+    if a.json: print(json.dumps(out,ensure_ascii=False));
+    print(f"FILE:file:///{mdp.as_posix()}")
 
 if __name__=='__main__':
     try: main()

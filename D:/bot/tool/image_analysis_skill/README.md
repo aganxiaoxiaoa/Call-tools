@@ -1,21 +1,23 @@
 # image_analysis_skill（唯一正式路径）
 
-- 工具路径：`D:\bot\tool\image_analysis_skill\image_analysis_tool.py`
-- Skill 路径：`C:\Users\Administrator\.openclaw\workspace\skills\image_analysis_skill\SKILL.md`
+唯一正式工具：`py "D:\bot\tool\image_analysis_skill\image_analysis_tool.py"`
 
-## 本地模式可分析
-几何、色彩、主体比例、裁切、留白、品牌规则、平面设计建议、商业适配、参考高度对比。
+## 本地模式（默认，不调用 API）
+可分析：基础信息、Top5 主色(HEX)、亮度/对比/饱和、色偏风险、主体 bbox 与占比、裁切风险、产品比例、Veytis/Juese 规则、平面设计建议、商业适配、reference 高度对比。
 
-## 视觉模式可分析（`--use-vision`）
-场景语义、人物细节、物体清单、标签文字、产品语义。
+## 视觉模式（可选）
+用于场景语义、人物细节、物体清单、标签文字、产品语义。
 
-## 视觉模型说明
-- 已实现：`qwen`（需 `DASHSCOPE_API_KEY`，可选 `DASHSCOPE_BASE_URL`，默认 `https://dashscope.aliyuncs.com/compatible-mode/v1`）。
-- 待扩展：`gemini` / `openai` / `local`。
-- 默认不调用 API；API 可能有费用或配额限制。
-- 若 401/429/timeout/配额不足，自动回退本地分析，不中断。
+### qwen 配置（已实现）
+- `DASHSCOPE_API_KEY`
+- `DASHSCOPE_BASE_URL`（可选，默认 `https://dashscope.aliyuncs.com/compatible-mode/v1`）
 
-## 命令
+`gemini/openai/local` 当前待扩展。默认不调用 API；API 可能有费用/配额。失败(401/429/timeout/配额)自动回退本地分析。
+
+## Telegram/OpenClaw 调用
+`py "D:\bot\tool\image_analysis_skill\image_analysis_tool.py" --image "{{MediaPath}}" --mode full`
+
+## 验收命令
 ```bash
 py "D:\bot\tool\image_analysis_skill\image_analysis_tool.py" --help
 py "D:\bot\tool\image_analysis_skill\image_analysis_tool.py" --image "D:\bot\test\veytis.png" --brand "Veytis" --mode full --object-type bottle
