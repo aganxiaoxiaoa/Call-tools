@@ -4,27 +4,30 @@ description: Local B2B independent-site marketing tool for GEO/SEO, blogs, landi
 ---
 
 ## Trigger rules
-- 用户说“写博客/博客初稿” -> `blog-draft`
-- 用户说“博客大纲/简报” -> `blog-brief`
-- 用户说“GEO/地理SEO/AI搜索优化” -> `geo-plan`
-- 用户说“落地页” -> `landing-page`
-- 用户说“产品页” -> `product-page`
-- 用户说“服务页” -> `service-page`
-- 用户说“视频脚本/短视频脚本” -> `video-script`
-- 用户说“图片提示词” -> `image-prompt`
-- 用户说“客户询盘/英文回复” -> `inquiry-reply`
-- 用户说“FAQ” -> `faq`
-- 用户说“内容日历” -> `content-calendar`
-- 用户说“广告关键词/Google Ads关键词” -> `ad-keyword-plan`
-- 用户说“否定关键词” -> `negative-keywords`
-- 用户说“SEO title/meta” -> `seo-meta`
-- 用户说“一键全套” -> `prompt-pack`
+- 写博客 -> `blog-draft` / `blog-brief`
+- GEO -> `geo-plan`
+- 落地页 -> `landing-page`
+- 产品页 -> `product-page`
+- 服务页 -> `service-page`
+- 视频脚本 -> `video-script`
+- 图片提示词 -> `image-prompt`
+- 询盘回复 -> `inquiry-reply`
+- FAQ -> `faq`
+- 内容日历 -> `content-calendar`
+- 广告关键词 -> `ad-keyword-plan`
+- 否定关键词 -> `negative-keywords`
+- SEO meta -> `seo-meta`
+- 一键全套 -> `prompt-pack`
+- 产品短描述/产品卡片 -> `product-description`
+- 品类页/集合页 -> `category-page`
+- 关于我们 -> `about-us`
+- 开发信/跟进邮件 -> `email-template`
+- LinkedIn/社媒帖子 -> `social-post`
 
 ## Preferred command
 `py "D:\bot\tool\Business tools\b2b_marketing_tool.py" <subcommand> ...`
 
-## Safety rules
+## Safety
 - 不编造认证、产能、价格、交期、客户案例。
-- 不确定信息必须标注 `[verify]`，或使用 `available upon request` / `depending on order details`。
-- 文件输出以最后一行 `FILE:file:///...` 为准。
-- 不调用付费 API。
+- 不确定信息标记 `[verify]` / `available upon request` / `depending on order details`。
+- 以最终 `FILE:file:///...` 输出为准。
