@@ -1,7 +1,11 @@
 # agent_control_center_skill
 
-## Purpose
-Global self-check, anti-hallucination, tool routing, command validation, and diagnostics for a local Windows OpenClaw + Telegram bot workflow.
+## Single source of truth
+`agent_control_center_skill` is the single master registry and governance layer for local tools.
+All routing, preflight checks, safety checks, and install readiness checks must use:
+`D:\bot\tool\agent_control_center_skill\tool_registry.json`
+
+Other tools should not create separate registries.
 
 ## Official paths
 - Script: `D:\bot\tool\agent_control_center_skill\agent_control_center.py`
@@ -9,8 +13,9 @@ Global self-check, anti-hallucination, tool routing, command validation, and dia
 - README: `D:\bot\tool\agent_control_center_skill\README.md`
 - Skill: `C:\Users\Administrator\.openclaw\workspace\skills\agent_control_center_skill\SKILL.md`
 
-## Command list
+## Commands
 - list-tools
+- registry-summary
 - status
 - check-tool
 - route
@@ -24,60 +29,23 @@ Global self-check, anti-hallucination, tool routing, command validation, and dia
 - verify-command
 - generate-verification
 
-## Examples
-```powershell
-py "D:\bot\tool\agent_control_center_skill\agent_control_center.py" --help
-py "D:\bot\tool\agent_control_center_skill\agent_control_center.py" list-tools
-py "D:\bot\tool\agent_control_center_skill\agent_control_center.py" status --deep
-py "D:\bot\tool\agent_control_center_skill\agent_control_center.py" check-tool --tool b2b_marketing_tool --deep
-py "D:\bot\tool\agent_control_center_skill\agent_control_center.py" check-tool --tool image_analysis_skill --run-help
-py "D:\bot\tool\agent_control_center_skill\agent_control_center.py" route --user-message "Create a Veytis bulk lavender essential oil product page"
-py "D:\bot\tool\agent_control_center_skill\agent_control_center.py" preflight --task "scan disk usage" --command "powershell -ExecutionPolicy Bypass -File \"D:\bot\tool\Cleaning tools\disk_cleaner.ps1\" -Scan -Top 20"
-py "D:\bot\tool\agent_control_center_skill\agent_control_center.py" validate-command --command "powershell -ExecutionPolicy Bypass -File \"D:\bot\tool\Cleaning tools\disk_cleaner.ps1\" -CleanSafe -Top 20"
-py "D:\bot\tool\agent_control_center_skill\agent_control_center.py" self-check --answer "The file has been installed and the bot is ready."
-py "D:\bot\tool\agent_control_center_skill\agent_control_center.py" error-explain --log "fatal: not a git repository"
-py "D:\bot\tool\agent_control_center_skill\agent_control_center.py" project-map
-py "D:\bot\tool\agent_control_center_skill\agent_control_center.py" verify-openclaw-skills
-py "D:\bot\tool\agent_control_center_skill\agent_control_center.py" doctor
-```
-
-## Output rules
-Every command writes three files under:
-`D:\bot\outputs\agent_control_center\YYYYMMDD_HHMMSS`
-- `<command>.md`
-- `<command>.json`
-- `<command>.txt`
-
-The final stdout line is always:
+## Output rule
+Every command must end with:
 `FILE:file:///D:/bot/outputs/agent_control_center/YYYYMMDD_HHMMSS/<command>.md`
 
-## Safety rules
-- Read-only inspection by default.
-- No file deletion, overwrite, or system configuration changes.
-- Disk cleanup is scan-only unless explicit confirmation is provided.
-- Paths with spaces must be quoted.
-- Never print full API keys or secrets.
+## Routing policy
+- Tool status, install checks, PowerShell output checks, and Codex verification route to `agent_control_center_skill`.
+- Automatic low-risk execution routes to `autopilot_operator_skill`, but only after `agent_control_center` route + preflight.
+- International public web research routes to `agent_reach_safe_research`.
+- Chinese app/social platform requests are blocked for safe research routing.
+- Marketing content after research should follow:
+  `agent_reach_safe_research -> b2b_marketing_tool`
 
-## How to add tools to tool_registry.json
-Add a new JSON object with required fields:
-`name, category, description, intents, command_template, candidate_paths, official_script_path, readme_path, skill_path, expected_help_terms, safe_by_default, requires_media, requires_api_key, paid_api_risk, destructive_risk, notes`.
+## Safety policy
+- Read-only checks by default.
+- Do not claim a tool is installed without registry + Test-Path + `--help` where applicable.
+- `agent_reach_safe_research` is read-only and limited to international public web sources.
+- Do not use cookies, logged-in sessions, posting, commenting, account automation, or disallowed platform automation.
 
-## How to check b2b_marketing_tool
-1. `check-tool --tool b2b_marketing_tool --deep`
-2. `generate-verification --tool b2b_marketing_tool`
-
-## How to check image_analysis_skill
-1. `check-tool --tool image_analysis_skill --run-help`
-2. `generate-verification --tool image_analysis_skill`
-
-## How to run doctor
-`py "D:\bot\tool\agent_control_center_skill\agent_control_center.py" doctor`
-
-## Common error explanations
-- `Path not found`: invalid path or file missing.
-- `ModuleNotFoundError`: missing Python dependency.
-- `401`: API key issue.
-- `402`: quota or balance issue.
-- `404`: path/model/endpoint missing.
-- `429`: rate limit.
-- `fatal: not a git repository`: wrong directory context.
+## Autopilot integration note
+`autopilot_operator_skill` must consume route/preflight results from this tool before any execution.

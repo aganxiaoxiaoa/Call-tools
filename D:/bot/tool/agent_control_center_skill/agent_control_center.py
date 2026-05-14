@@ -62,6 +62,18 @@ def cmd_list_tools(args, tools):
     md += ["","## Problems Found","- Missing files are reported in JSON.","","## Recommended Next Actions","- Run `status --deep`.","","## Verification Commands","- py \"D:\\bot\\tool\\agent_control_center_skill\\agent_control_center.py\" status","","## Route Suggestions","- Use route command.","","## Safety Notes","- Read-only checks by default.","","## JSON Summary","See JSON report."]
     write_reports("list-tools", {"tools":rows}, md)
 
+
+
+def cmd_registry_summary(args, tools):
+    rows=[]
+    for t in tools:
+        script=t.get("official_script_path","")
+        ready=exists(script) and exists(t.get("readme_path","")) and exists(t.get("skill_path",""))
+        rows.append({"name":t["name"],"ready":ready,"safe":t.get("safe_by_default",False),"requires_media":t.get("requires_media",False),"requires_network":t.get("requires_network",False),"requires_login":t.get("requires_login",False),"allows_write_actions":t.get("allows_write_actions",False),"disallowed_platforms":t.get("disallowed_platforms",[]),"recommended_next_action":"Run check-tool --tool %s"%t["name"]})
+    md=["# Agent Control Center Report","","## Executive Summary",f"Registry tools: {len(rows)}","","## Tool Status Table"]+[f"- {r['name']}: ready={r['ready']} safe={r['safe']} media={r['requires_media']} network={r['requires_network']} login={r['requires_login']} write={r['allows_write_actions']}" for r in rows]
+    md += ["","## Problems Found","- See JSON for disallowed platforms and next actions.","","## Recommended Next Actions","- Fix not-ready tools first.","","## Verification Commands","- py \"D:\\bot\\tool\\agent_control_center_skill\\agent_control_center.py\" check-tool --tool all --deep","","## Route Suggestions","- Use route command with user message.","","## Safety Notes","- Registry is the single source of truth.","","## JSON Summary","See JSON report."]
+    write_reports("registry-summary",{"registry_summary":rows},md)
+
 def cmd_status(args, tools):
     out=[]
     for t in tools:
@@ -97,23 +109,32 @@ def cmd_check_tool(args, tools):
     md += ["","## Route Suggestions","- Use route command for user messages.","","## Safety Notes","- This command is read-only.","","## JSON Summary","See JSON report."]
     write_reports("check-tool",{"supported_tool_names":names,"results":out},md)
 
-def route_logic(msg):
+def route_logic(msg, tools):
     m=msg.lower()
-    if any(k in m for k in ["blog","geo","seo","landing page","product page","service page","faq","content calendar","google ads","negative keywords","inquiry reply","email template","social post","about us","category page"]): return "b2b_marketing_tool",0.92
-    if any(k in m for k in ["image","proportion","bottle","cap","label","artifacts","crop","color cast","factory photo","people action","machine logic"]): return "image_analysis_skill",0.9
-    if any(k in m for k in ["logo","layout","poster","banner","hero","typography","visual hierarchy"]): return "graphic_design_analyzer_skill",0.88
-    if any(k in m for k in ["disk","c drive","d drive","scan large files","cleanup"]): return "disk_cleaner",0.85
-    if any(k in m for k in ["face swap","facefusion","batch face"]): return "facefusion_tools",0.87
-    if any(k in m for k in ["audio transcription","video transcription","subtitles","whisper","ffmpeg"]): return "video_audio_analysis",0.89
-    if any(k in m for k in ["test-path","--help","install readiness","powershell output","codex says done","verify"]): return "agent_control_center_skill",0.8
-    return "content_ops",0.4
+    blocked_terms=["xiaohongshu","douyin","weibo","wechat","bilibili","zhihu","xueqiu","v2ex","boss zhipin","小红书","抖音","微博","微信","知乎","哔哩","雪球"]
+    if any(x in m for x in blocked_terms):
+        return {"recommended_tool":"blocked","reason":"Chinese app/social platform requests are disallowed for safe research.","confidence":0.99,"blocked":True}
+    if any(x in m for x in ["tool status","install check","powershell output","codex verify","test-path"]):
+        return {"recommended_tool":"agent_control_center_skill","reason":"Governance and verification request.","confidence":0.9,"blocked":False}
+    if any(x in m for x in ["automatic task plan","low-risk execution"]):
+        return {"recommended_tool":"autopilot_operator_skill","reason":"Autopilot requested; require preflight first.","confidence":0.85,"blocked":False}
+    for t in tools:
+        keys=[k.lower() for k in t.get("intents",[])]
+        if any(k in m for k in keys):
+            return {"recommended_tool":t["name"],"reason":"Matched registry intents.","confidence":0.82,"blocked":False}
+    if any(x in m for x in ["international","github","reddit","youtube","rss","public website","竞品","国际网站"]):
+        return {"recommended_tool":"agent_reach_safe_research","reason":"Public international research request.","confidence":0.9,"blocked":False}
+    return {"recommended_tool":"content_ops","reason":"Fallback route.","confidence":0.4,"blocked":False}
 
 def cmd_route(args,tools):
     msg=args.user_message or args.intent or ""
-    tool,conf=route_logic(msg)
+    r=route_logic(msg,tools)
+    tool=r["recommended_tool"]; conf=r["confidence"]
     t=next((x for x in tools if x["name"]==tool),None)
-    tpl=t["command_template"] if t else "py \"D:\\bot\\tool\\agent_control_center_skill\\agent_control_center.py\" status"
-    data={"recommended_tool":tool,"recommended_subcommand":"check-tool" if tool=="agent_control_center_skill" else "run","recommended_command_template":tpl,"reason":"keyword routing","confidence":conf,"required_inputs":["user request"],"missing_inputs":[] if msg else ["user request"],"caution":"Ask confirmation for risky operations.","fallback_tool":"agent_control_center_skill","should_ask_user_for_file_or_image": args.has_image=="false" and "image" in msg.lower(),"example_command":tpl}
+    tpl=(t.get("command_templates",["py \"D:\\bot\\tool\\agent_control_center_skill\\agent_control_center.py\" status"])[0] if t else "py \"D:\\bot\\tool\\agent_control_center_skill\\agent_control_center.py\" status")
+    caution="Blocked request" if r.get("blocked") else ("Run preflight first" if tool=="autopilot_operator_skill" else "Ask confirmation for risky operations.")
+    sequence=["agent_reach_safe_research -> b2b_marketing_tool"] if ("marketing" in msg.lower() and any(x in msg.lower() for x in ["research","github","reddit","youtube","rss","international"])) else []
+    data={"recommended_tool":tool,"recommended_subcommand":"check-tool" if tool=="agent_control_center_skill" else "run","recommended_command_template":tpl,"reason":r["reason"],"confidence":conf,"required_inputs":["user request"],"missing_inputs":[] if msg else ["user request"],"caution":caution,"fallback_tool":"agent_control_center_skill","should_ask_user_for_file_or_image": args.has_image=="false" and "image" in msg.lower(),"example_command":tpl,"route_sequence":sequence,"blocked":r.get("blocked",False)}
     md=["# Agent Control Center Report","","## Executive Summary",f"Routed to: {tool} (confidence={conf})","","## Tool Status Table",f"- recommended_tool: {tool}","","## Problems Found","- Missing user message." if not msg else "- None.","","## Recommended Next Actions","- Confirm required input files.","","## Verification Commands","- Run check-tool for selected tool.","","## Route Suggestions",f"- {tpl}","","## Safety Notes","- Routing result is advisory.","","## JSON Summary","See JSON report."]
     write_reports("route",data,md)
 
@@ -202,7 +223,9 @@ def cmd_doctor(args,tools):
     st=[tool_status(t) for t in tools]
     ready=[x['tool_name'] for x in st if x['install_ready']]; not_ready=[x['tool_name'] for x in st if not x['install_ready']]
     env={"D_bot_exists":exists(r"D:\bot"),"D_bot_tool_exists":exists(r"D:\bot\tool"),"openclaw_config_exists":exists(r"C:\Users\Administrator\.openclaw\openclaw.json"),"openclaw_skills_exists":SKILLS_ROOT.exists(),"py_exists":bool(shutil.which("py") or shutil.which("python")),"powershell_exists":bool(shutil.which("powershell") or shutil.which("pwsh")),"openclaw_cmd_exists":bool(shutil.which("openclaw")),"HTTP_PROXY_exists":bool(os.getenv("HTTP_PROXY")),"HTTPS_PROXY_exists":bool(os.getenv("HTTPS_PROXY")),"DASHSCOPE_API_KEY_exists":bool(os.getenv("DASHSCOPE_API_KEY")),"LOCAL_VISION_BASE_URL_exists":bool(os.getenv("LOCAL_VISION_BASE_URL")),"LOCAL_VISION_MODEL_exists":bool(os.getenv("LOCAL_VISION_MODEL"))}
-    data={"overall_status":"ready" if not not_ready else "partial","ready_tools":ready,"not_ready_tools":not_ready,"missing_scripts":[x['tool_name'] for x in st if not x['script_exists']],"missing_skills":[x['tool_name'] for x in st if not x['skill_exists']],"help_failed_tools":[],"duplicate_risks":[],"old_entry_risks":[],"environment_status":env,"next_best_actions":["Fix missing files","Run check-tool --tool all --deep"],"recommended_verification_commands":["py \"D:\\bot\\tool\\agent_control_center_skill\\agent_control_center.py\" status --deep","py \"D:\\bot\\tool\\agent_control_center_skill\\agent_control_center.py\" verify-openclaw-skills"]}
+    old_tools_path_usage=[t["tool_name"] for t in st if "D:\\bot\\tools" in (t.get("script_path") or "") or "D:\\bot\\tools" in (t.get("readme_path") or "")]
+    unsafe_marked_safe=[t["tool_name"] for t,treg in zip(st,tools) if treg.get("destructive_risk") and treg.get("safe_by_default")]
+    data={"overall_status":"ready" if not not_ready else "partial","ready_tools":ready,"not_ready_tools":not_ready,"missing_scripts":[x['tool_name'] for x in st if not x['script_exists']],"missing_skills":[x['tool_name'] for x in st if not x['skill_exists']],"help_failed_tools":[],"duplicate_risks":[],"old_entry_risks":old_tools_path_usage,"unsafe_tools_marked_safe":unsafe_marked_safe,"environment_status":env,"next_best_actions":["Fix missing files","Run check-tool --tool all --deep"],"recommended_verification_commands":["py \"D:\\bot\\tool\\agent_control_center_skill\\agent_control_center.py\" status --deep","py \"D:\\bot\\tool\\agent_control_center_skill\\agent_control_center.py\" verify-openclaw-skills"]}
     md=["# Agent Control Center Report","","## Executive Summary",f"overall_status={data['overall_status']}","","## Tool Status Table"]+[f"- {x['tool_name']}: ready={x['install_ready']}" for x in st]
     md += ["","## Problems Found"]+[f"- not_ready_tool: {x}" for x in not_ready] + ["","## Recommended Next Actions"]+[f"- {x}" for x in data["next_best_actions"]]+["","## Verification Commands"]+[f"- {x}" for x in data["recommended_verification_commands"]]+["","## Route Suggestions","- Use route command.","","## Safety Notes","- Secrets are never printed.","","## JSON Summary","See JSON report."]
     write_reports("doctor",data,md)
@@ -223,8 +246,13 @@ def cmd_verify_command(args):
 
 def cmd_generate_verification(args):
     t=args.tool
-    cmds=[]
-    if t=="b2b_marketing_tool":
+    reg=load_registry()
+    entry=next((x for x in reg if x["name"]==t),None)
+    if entry:
+        cmds=entry.get("verification_commands",[])
+    else:
+        cmds=[]
+    if not cmds and t=="b2b_marketing_tool":
         sp=r"D:\bot\tool\Business tools\b2b_marketing_tool.py"; rp=r"D:\bot\tool\Business tools\README.md"; kp=r"C:\Users\Administrator\.openclaw\workspace\skills\b2b_marketing_skill\SKILL.md"
         cmds=[f"Test-Path {q(sp)}",f"Test-Path {q(rp)}",f"Test-Path {q(kp)}",f"py {q(sp)} --help",f"py {q(sp)} product-page --brand Veytis --product \"bulk lavender essential oil\"",f"py {q(sp)} negative-keywords --campaign \"lavender oil\"",f"py {q(sp)} inquiry-reply --input inquiry.txt"]
     elif t=="image_analysis_skill":
@@ -242,6 +270,7 @@ def main():
     ap=argparse.ArgumentParser(description="Agent control center for local Windows OpenClaw and Telegram bot governance")
     sub=ap.add_subparsers(dest="cmd",required=True)
     sub.add_parser("list-tools")
+    sub.add_parser("registry-summary")
     s=sub.add_parser("status"); s.add_argument("--deep",action="store_true"); s.add_argument("--json-only",action="store_true"); s.add_argument("--include-auto-discovered",action="store_true")
     c=sub.add_parser("check-tool"); c.add_argument("--tool",required=True); c.add_argument("--deep",action="store_true"); c.add_argument("--run-help",action="store_true")
     r=sub.add_parser("route"); r.add_argument("--user-message"); r.add_argument("--intent"); r.add_argument("--has-image",default="false"); r.add_argument("--has-file",default="false"); r.add_argument("--language",default="auto")
@@ -257,6 +286,7 @@ def main():
 
     args=ap.parse_args(); tools=load_registry()
     if args.cmd=="list-tools": cmd_list_tools(args,tools)
+    elif args.cmd=="registry-summary": cmd_registry_summary(args,tools)
     elif args.cmd=="status": cmd_status(args,tools)
     elif args.cmd=="check-tool": cmd_check_tool(args,tools)
     elif args.cmd=="route": cmd_route(args,tools)
