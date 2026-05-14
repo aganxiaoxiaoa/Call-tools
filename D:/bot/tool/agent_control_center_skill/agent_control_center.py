@@ -87,11 +87,34 @@ def cmd_list_tools(args, tools):
 def cmd_registry_summary(args, tools):
     rows=[]
     for t in tools:
-        script=t.get("official_script_path","")
-        ready=exists(script) and exists(t.get("readme_path","")) and exists(t.get("skill_path",""))
-        rows.append({"name":t["name"],"ready":ready,"safe":t.get("safe_by_default",False),"requires_media":t.get("requires_media",False),"requires_network":t.get("requires_network",False),"requires_login":t.get("requires_login",False),"allows_write_actions":t.get("allows_write_actions",False),"disallowed_platforms":t.get("disallowed_platforms",[]),"recommended_next_action":"Run check-tool --tool %s"%t["name"]})
-    md=["# Agent Control Center Report","","## Executive Summary",f"Registry tools: {len(rows)}","","## Tool Status Table"]+[f"- {r['name']}: ready={r['ready']} safe={r['safe']} media={r['requires_media']} network={r['requires_network']} login={r['requires_login']} write={r['allows_write_actions']}" for r in rows]
-    md += ["","## Problems Found","- See JSON for disallowed platforms and next actions.","","## Recommended Next Actions","- Fix not-ready tools first.","","## Verification Commands","- py \"D:\\bot\\tool\\agent_control_center_skill\\agent_control_center.py\" check-tool --tool all --deep","","## Route Suggestions","- Use route command with user message.","","## Safety Notes","- Registry is the single source of truth.","","## JSON Summary","See JSON report."]
+        s=tool_status(t)
+        level=s.get("readiness_level","recommended")
+        if s["install_ready"]:
+            next_action="Ready."
+        elif level=="core":
+            next_action="Fix this core tool first."
+        elif level=="optional":
+            next_action="Optional tool; fix only when this workflow is needed."
+        elif level=="dependency":
+            next_action="Dependency status only; do not require README/SKILL unless separately registered as a skill."
+        else:
+            next_action="Recommended tool; fix when this workflow is required."
+        rows.append({
+            "name":s["tool_name"],"ready":s["install_ready"],"readiness_level":level,"required_for_core":s.get("required_for_core",False),
+            "optional":s.get("optional",False),"safe":t.get("safe_by_default",False),"requires_media":t.get("requires_media",False),
+            "requires_network":t.get("requires_network",False),"requires_login":t.get("requires_login",False),
+            "allows_write_actions":t.get("allows_write_actions",False),"disallowed_platforms":t.get("disallowed_platforms",[]),
+            "readiness_note":s.get("readiness_note",""),"recommended_next_action":next_action
+        })
+    core=[r for r in rows if r["readiness_level"]=="core"]
+    optional=[r for r in rows if r["readiness_level"]=="optional"]
+    deps=[r for r in rows if r["readiness_level"]=="dependency"]
+    all_core_ready=all(r["ready"] for r in core) if core else True
+    md=["# Agent Control Center Report","","## Executive Summary",f"Registry tools: {len(rows)}","","## Core tools"]+[f"- {r['name']}: ready={r['ready']} safe={r['safe']} action={r['recommended_next_action']}" for r in core]
+    md += ["","## Optional tools"]+[f"- {r['name']}: ready={r['ready']} safe={r['safe']} action={r['recommended_next_action']}" for r in optional]
+    md += ["","## Dependencies"]+[f"- {r['name']}: ready={r['ready']} action={r['recommended_next_action']}" for r in deps]
+    next_line="Core system is usable. Optional tools can be fixed when their workflow is needed." if all_core_ready else "Fix core_not_ready_tools first."
+    md += ["","## Problems Found","- See JSON for disallowed platforms and next actions.","","## Recommended Next Actions",f"- {next_line}","","## Verification Commands","- py \"D:\\bot\\tool\\agent_control_center_skill\\agent_control_center.py\" check-tool --tool all --deep","","## Route Suggestions","- Use route command with user message.","","## Safety Notes","- Registry is the single source of truth.","","## JSON Summary","See JSON report."]
     write_reports("registry-summary",{"registry_summary":rows},md)
 
 def cmd_status(args, tools):
