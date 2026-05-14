@@ -1,0 +1,677 @@
+{
+  "version": "2.0.0",
+  "single_source_of_truth": true,
+  "tools": [
+    {
+      "name": "b2b_marketing_tool",
+      "category": "content",
+      "description": "B2B content generation after validated research input.",
+      "intents": [
+        "blog",
+        "seo",
+        "geo",
+        "product page",
+        "landing page",
+        "marketing copy"
+      ],
+      "official_script_path": "D:\\bot\\tool\\Business tools\\b2b_marketing_tool.py",
+      "official_directory": "D:\\bot\\tool\\Business tools",
+      "readme_path": "D:\\bot\\tool\\Business tools\\README.md",
+      "skill_path": "C:\\Users\\Administrator\\.openclaw\\workspace\\skills\\b2b_marketing_skill\\SKILL.md",
+      "command_templates": [
+        "py \"D:\\bot\\tool\\Business tools\\b2b_marketing_tool.py\" product-page --brand \"{brand}\" --product \"{product}\""
+      ],
+      "expected_help_terms": [
+        "product-page",
+        "negative-keywords",
+        "inquiry-reply"
+      ],
+      "output_rule": "FILE:file:///D:/bot/outputs/agent_control_center/YYYYMMDD_HHMMSS/<command>.md",
+      "requires_media": false,
+      "requires_network": false,
+      "requires_api_key": false,
+      "requires_login": false,
+      "allows_write_actions": true,
+      "safe_by_default": true,
+      "destructive_risk": false,
+      "paid_api_risk": true,
+      "allowed_platforms": [
+        "local files"
+      ],
+      "disallowed_platforms": [],
+      "disallowed_actions": [
+        "delete files without confirmation"
+      ],
+      "install_ready_checks": [
+        "script exists",
+        "README exists",
+        "SKILL exists"
+      ],
+      "verification_commands": [
+        "Test-Path \"D:\\bot\\tool\\Business tools\\b2b_marketing_tool.py\"",
+        "py \"D:\\bot\\tool\\Business tools\\b2b_marketing_tool.py\" --help"
+      ],
+      "route_examples": [
+        "Create a product page for private label oils"
+      ],
+      "notes": "Use after research when possible.",
+      "required_for_core": true,
+      "optional": false,
+      "readiness_level": "core",
+      "readiness_note": "Required for core governance and delivery workflows."
+    },
+    {
+      "name": "image_analysis_skill",
+      "category": "vision",
+      "description": "Image quality and product visual analysis.",
+      "intents": [
+        "image analysis",
+        "cap issue",
+        "label text",
+        "artifact",
+        "color cast"
+      ],
+      "official_script_path": "D:\\bot\\tool\\image_analysis_skill\\image_analysis_tool.py",
+      "official_directory": "D:\\bot\\tool\\image_analysis_skill",
+      "readme_path": "D:\\bot\\tool\\image_analysis_skill\\README.md",
+      "skill_path": "C:\\Users\\Administrator\\.openclaw\\workspace\\skills\\image_analysis_skill\\SKILL.md",
+      "command_templates": [
+        "py \"D:\\bot\\tool\\image_analysis_skill\\image_analysis_tool.py\" --image \"{image_path}\" --mode full"
+      ],
+      "expected_help_terms": [
+        "full",
+        "semantic-full"
+      ],
+      "output_rule": "FILE:file:///D:/bot/outputs/agent_control_center/YYYYMMDD_HHMMSS/<command>.md",
+      "requires_media": true,
+      "requires_network": false,
+      "requires_api_key": false,
+      "requires_login": false,
+      "allows_write_actions": false,
+      "safe_by_default": true,
+      "destructive_risk": false,
+      "paid_api_risk": false,
+      "allowed_platforms": [
+        "local files"
+      ],
+      "disallowed_platforms": [],
+      "disallowed_actions": [
+        "delete source image"
+      ],
+      "install_ready_checks": [
+        "script exists",
+        "README exists",
+        "SKILL exists"
+      ],
+      "verification_commands": [
+        "Test-Path \"D:\\bot\\tool\\image_analysis_skill\\image_analysis_tool.py\"",
+        "py \"D:\\bot\\tool\\image_analysis_skill\\image_analysis_tool.py\" --help"
+      ],
+      "route_examples": [
+        "Analyze this image because cap looks fake"
+      ],
+      "notes": "Requires image path.",
+      "required_for_core": true,
+      "optional": false,
+      "readiness_level": "core",
+      "readiness_note": "Required for core governance and delivery workflows."
+    },
+    {
+      "name": "graphic_design_analyzer_skill",
+      "category": "design",
+      "description": "Graphic layout and typography review.",
+      "intents": [
+        "typography",
+        "layout",
+        "logo",
+        "banner"
+      ],
+      "official_script_path": "D:\\bot\\tool\\graphic_design_analyzer_skill\\graphic_design_tool.py",
+      "official_directory": "D:\\bot\\tool\\graphic_design_analyzer_skill",
+      "readme_path": "D:\\bot\\tool\\graphic_design_analyzer_skill\\README.md",
+      "skill_path": "C:\\Users\\Administrator\\.openclaw\\workspace\\skills\\graphic_design_analyzer_skill\\SKILL.md",
+      "command_templates": [
+        "py \"D:\\bot\\tool\\graphic_design_analyzer_skill\\graphic_design_tool.py\" --image \"{image_path}\""
+      ],
+      "expected_help_terms": [],
+      "output_rule": "FILE:file:///D:/bot/outputs/agent_control_center/YYYYMMDD_HHMMSS/<command>.md",
+      "requires_media": true,
+      "requires_network": false,
+      "requires_api_key": false,
+      "requires_login": false,
+      "allows_write_actions": false,
+      "safe_by_default": true,
+      "destructive_risk": false,
+      "paid_api_risk": false,
+      "allowed_platforms": [
+        "local files"
+      ],
+      "disallowed_platforms": [],
+      "disallowed_actions": [],
+      "install_ready_checks": [
+        "script exists",
+        "README exists",
+        "SKILL exists"
+      ],
+      "verification_commands": [
+        "Test-Path \"D:\\bot\\tool\\graphic_design_analyzer_skill\\graphic_design_tool.py\""
+      ],
+      "route_examples": [
+        "Check typography and visual hierarchy"
+      ],
+      "notes": "Design-focused routing.",
+      "required_for_core": false,
+      "optional": true,
+      "readiness_level": "optional",
+      "readiness_note": "Optional workflow tool; only needed for specific tasks."
+    },
+    {
+      "name": "agent_reach_safe_research",
+      "category": "research",
+      "description": "Safe read-only international public web research using Jina Reader, RSS, YouTube, GitHub public repos, and Reddit read-only.",
+      "intents": [
+        "international competitor research",
+        "github public repo",
+        "youtube transcript",
+        "reddit discussion",
+        "rss"
+      ],
+      "official_script_path": "",
+      "official_directory": "D:\\bot\\tool\\agent_reach_safe_research_skill",
+      "readme_path": "D:\\bot\\tool\\agent_reach_safe_research_skill\\README.md",
+      "skill_path": "C:\\Users\\Administrator\\.openclaw\\workspace\\skills\\agent_reach_safe_research_skill\\SKILL.md",
+      "command_templates": [
+        "curl.exe \"https://r.jina.ai/http://example.com\"",
+        "\"D:\\bot\\venvs\\agent-reach\\Scripts\\yt-dlp.exe\" --dump-json \"URL\"",
+        "\"D:\\bot\\github\\gh.exe\" repo view owner/repo --json name,description,url,stargazerCount,updatedAt",
+        "\"D:\\bot\\venvs\\agent-reach\\Scripts\\rdt.exe\" search \"query\"",
+        "\"D:\\bot\\venvs\\agent-reach\\Scripts\\rdt.exe\" read \"url\""
+      ],
+      "expected_help_terms": [],
+      "output_rule": "FILE:file:///D:/bot/outputs/agent_control_center/YYYYMMDD_HHMMSS/<command>.md",
+      "requires_media": false,
+      "requires_network": true,
+      "requires_api_key": false,
+      "requires_login": false,
+      "allows_write_actions": false,
+      "safe_by_default": true,
+      "destructive_risk": false,
+      "paid_api_risk": false,
+      "allowed_platforms": [
+        "international public websites",
+        "RSS",
+        "YouTube metadata/subtitles",
+        "GitHub public repos",
+        "Reddit read-only"
+      ],
+      "disallowed_platforms": [
+        "XiaoHongShu",
+        "Douyin",
+        "Weibo",
+        "WeChat",
+        "Bilibili",
+        "Zhihu",
+        "Xueqiu",
+        "V2EX",
+        "Boss Zhipin",
+        "Chinese app/social/community/video platforms"
+      ],
+      "disallowed_actions": [
+        "cookies",
+        "logged-in browser sessions",
+        "posting",
+        "commenting",
+        "liking",
+        "following",
+        "sharing",
+        "messaging",
+        "account automation",
+        "agent-reach install --env=auto",
+        "mcporter",
+        "Exa",
+        "bilibili-cli"
+      ],
+      "install_ready_checks": [
+        "README exists",
+        "SKILL exists",
+        "gh exists: D:\\bot\\github\\gh.exe",
+        "yt-dlp exists: D:\\bot\\venvs\\agent-reach\\Scripts\\yt-dlp.exe",
+        "rdt exists: D:\\bot\\venvs\\agent-reach\\Scripts\\rdt.exe"
+      ],
+      "verification_commands": [
+        "Test-Path \"D:\\bot\\tool\\agent_reach_safe_research_skill\\README.md\"",
+        "Test-Path \"C:\\Users\\Administrator\\.openclaw\\workspace\\skills\\agent_reach_safe_research_skill\\SKILL.md\"",
+        "Test-Path \"D:\\bot\\github\\gh.exe\"",
+        "Test-Path \"D:\\bot\\venvs\\agent-reach\\Scripts\\yt-dlp.exe\"",
+        "Test-Path \"D:\\bot\\venvs\\agent-reach\\Scripts\\rdt.exe\""
+      ],
+      "route_examples": [
+        "Read this GitHub public repo and summarize"
+      ],
+      "notes": "Do not use for Chinese app platforms.",
+      "tool_type": "command_pattern_skill",
+      "script_required": false,
+      "required_for_core": true,
+      "optional": false,
+      "readiness_level": "core",
+      "readiness_note": "Required for core governance and delivery workflows."
+    },
+    {
+      "name": "autopilot_operator_skill",
+      "category": "automation",
+      "description": "Low-risk execution orchestrator. Must consume route/preflight from agent_control_center.",
+      "intents": [
+        "automatic task plan",
+        "low-risk execution"
+      ],
+      "official_script_path": "D:\\bot\\tool\\autopilot_operator_skill\\autopilot_operator.py",
+      "official_directory": "D:\\bot\\tool\\autopilot_operator_skill",
+      "readme_path": "D:\\bot\\tool\\autopilot_operator_skill\\README.md",
+      "skill_path": "C:\\Users\\Administrator\\.openclaw\\workspace\\skills\\autopilot_operator_skill\\SKILL.md",
+      "command_templates": [
+        "py \"D:\\bot\\tool\\autopilot_operator_skill\\autopilot_operator.py\" --task \"{task}\""
+      ],
+      "expected_help_terms": [],
+      "output_rule": "FILE:file:///D:/bot/outputs/agent_control_center/YYYYMMDD_HHMMSS/<command>.md",
+      "requires_media": false,
+      "requires_network": false,
+      "requires_api_key": false,
+      "requires_login": false,
+      "allows_write_actions": true,
+      "safe_by_default": false,
+      "destructive_risk": false,
+      "paid_api_risk": false,
+      "allowed_platforms": [
+        "local tools"
+      ],
+      "disallowed_platforms": [],
+      "disallowed_actions": [
+        "skip preflight"
+      ],
+      "install_ready_checks": [
+        "script exists",
+        "README exists",
+        "SKILL exists"
+      ],
+      "verification_commands": [
+        "Test-Path \"D:\\bot\\tool\\autopilot_operator_skill\\autopilot_operator.py\""
+      ],
+      "route_examples": [
+        "Build low-risk plan"
+      ],
+      "notes": "Call agent_control_center route/preflight first.",
+      "required_for_core": true,
+      "optional": false,
+      "readiness_level": "core",
+      "readiness_note": "Required for core governance and delivery workflows."
+    },
+    {
+      "name": "disk_cleaner",
+      "category": "ops",
+      "description": "Disk scan utility with scan-only default.",
+      "intents": [
+        "disk scan",
+        "large files",
+        "c drive full"
+      ],
+      "official_script_path": "D:\\bot\\tool\\Cleaning tools\\disk_cleaner.ps1",
+      "official_directory": "D:\\bot\\tool\\Cleaning tools",
+      "readme_path": "D:\\bot\\tool\\Cleaning tools\\README.md",
+      "skill_path": "C:\\Users\\Administrator\\.openclaw\\workspace\\skills\\disk_cleaner\\SKILL.md",
+      "command_templates": [
+        "powershell -ExecutionPolicy Bypass -File \"D:\\bot\\tool\\Cleaning tools\\disk_cleaner.ps1\" -Scan -Top 20"
+      ],
+      "expected_help_terms": [],
+      "output_rule": "FILE:file:///D:/bot/outputs/agent_control_center/YYYYMMDD_HHMMSS/<command>.md",
+      "requires_media": false,
+      "requires_network": false,
+      "requires_api_key": false,
+      "requires_login": false,
+      "allows_write_actions": true,
+      "safe_by_default": false,
+      "destructive_risk": true,
+      "paid_api_risk": false,
+      "allowed_platforms": [
+        "local filesystems"
+      ],
+      "disallowed_platforms": [],
+      "disallowed_actions": [
+        "cleanup without explicit confirmation"
+      ],
+      "install_ready_checks": [
+        "script exists"
+      ],
+      "verification_commands": [
+        "Test-Path \"D:\\bot\\tool\\Cleaning tools\\disk_cleaner.ps1\""
+      ],
+      "route_examples": [
+        "scan disk usage"
+      ],
+      "notes": "Scan-only default.",
+      "required_for_core": false,
+      "optional": true,
+      "readiness_level": "optional",
+      "readiness_note": "Optional workflow tool; only needed for specific tasks."
+    },
+    {
+      "name": "facefusion_tools",
+      "category": "media",
+      "description": "Face swap workflow; requires safety confirmation.",
+      "intents": [
+        "face swap",
+        "facefusion"
+      ],
+      "official_script_path": "D:\\bot\\tool\\FaceFusion tools\\facefusion_swap.py",
+      "official_directory": "D:\\bot\\tool\\FaceFusion tools",
+      "readme_path": "D:\\bot\\tool\\FaceFusion tools\\README.md",
+      "skill_path": "C:\\Users\\Administrator\\.openclaw\\workspace\\skills\\facefusion_tools\\SKILL.md",
+      "command_templates": [
+        "py \"D:\\bot\\tool\\FaceFusion tools\\facefusion_swap.py\" --source \"{source}\" --target \"{target}\""
+      ],
+      "expected_help_terms": [],
+      "output_rule": "FILE:file:///D:/bot/outputs/agent_control_center/YYYYMMDD_HHMMSS/<command>.md",
+      "requires_media": true,
+      "requires_network": false,
+      "requires_api_key": false,
+      "requires_login": false,
+      "allows_write_actions": true,
+      "safe_by_default": false,
+      "destructive_risk": false,
+      "paid_api_risk": false,
+      "allowed_platforms": [
+        "local files"
+      ],
+      "disallowed_platforms": [],
+      "disallowed_actions": [
+        "run without confirmation"
+      ],
+      "install_ready_checks": [
+        "script exists",
+        "README exists"
+      ],
+      "verification_commands": [
+        "Test-Path \"D:\\bot\\tool\\FaceFusion tools\\facefusion_swap.py\""
+      ],
+      "route_examples": [
+        "swap face in local video"
+      ],
+      "notes": "Require explicit confirmation.",
+      "required_for_core": false,
+      "optional": true,
+      "readiness_level": "optional",
+      "readiness_note": "Optional workflow tool; only needed for specific tasks."
+    },
+    {
+      "name": "content_ops",
+      "category": "content",
+      "description": "Content operations helper.",
+      "intents": [
+        "content ops"
+      ],
+      "official_script_path": "D:\\bot\\tool\\content-ops\\content_ops.py",
+      "official_directory": "D:\\bot\\tool\\content-ops",
+      "readme_path": "D:\\bot\\tool\\content-ops\\README.md",
+      "skill_path": "C:\\Users\\Administrator\\.openclaw\\workspace\\skills\\content_ops\\SKILL.md",
+      "command_templates": [
+        "py \"D:\\bot\\tool\\content-ops\\content_ops.py\" --help"
+      ],
+      "expected_help_terms": [],
+      "output_rule": "FILE:file:///D:/bot/outputs/agent_control_center/YYYYMMDD_HHMMSS/<command>.md",
+      "requires_media": false,
+      "requires_network": false,
+      "requires_api_key": false,
+      "requires_login": false,
+      "allows_write_actions": true,
+      "safe_by_default": true,
+      "destructive_risk": false,
+      "paid_api_risk": false,
+      "allowed_platforms": [
+        "local files"
+      ],
+      "disallowed_platforms": [],
+      "disallowed_actions": [],
+      "install_ready_checks": [
+        "script exists"
+      ],
+      "verification_commands": [
+        "Test-Path \"D:\\bot\\tool\\content-ops\\content_ops.py\""
+      ],
+      "route_examples": [
+        "prepare publishing pipeline"
+      ],
+      "notes": "Optional helper.",
+      "required_for_core": false,
+      "optional": true,
+      "readiness_level": "optional",
+      "readiness_note": "Optional workflow tool; only needed for specific tasks."
+    },
+    {
+      "name": "video_audio_analysis",
+      "category": "media",
+      "description": "Video/audio transcription and analysis.",
+      "intents": [
+        "audio transcription",
+        "video transcription",
+        "whisper",
+        "ffmpeg"
+      ],
+      "official_script_path": "D:\\bot\\openclaw_data\\.openclaw\\scripts\\video_audio_auto.py",
+      "official_directory": "D:\\bot\\openclaw_data\\.openclaw\\scripts",
+      "readme_path": "D:\\bot\\openclaw_data\\.openclaw\\scripts\\README.md",
+      "skill_path": "C:\\Users\\Administrator\\.openclaw\\workspace\\skills\\video_audio_analysis\\SKILL.md",
+      "command_templates": [
+        "py \"D:\\bot\\openclaw_data\\.openclaw\\scripts\\video_audio_auto.py\" --input \"{input_path}\""
+      ],
+      "expected_help_terms": [],
+      "output_rule": "FILE:file:///D:/bot/outputs/agent_control_center/YYYYMMDD_HHMMSS/<command>.md",
+      "requires_media": true,
+      "requires_network": false,
+      "requires_api_key": false,
+      "requires_login": false,
+      "allows_write_actions": true,
+      "safe_by_default": true,
+      "destructive_risk": false,
+      "paid_api_risk": false,
+      "allowed_platforms": [
+        "local files"
+      ],
+      "disallowed_platforms": [],
+      "disallowed_actions": [],
+      "install_ready_checks": [
+        "script exists"
+      ],
+      "verification_commands": [
+        "Test-Path \"D:\\bot\\openclaw_data\\.openclaw\\scripts\\video_audio_auto.py\""
+      ],
+      "route_examples": [
+        "transcribe video"
+      ],
+      "notes": "May depend on ffmpeg.",
+      "required_for_core": false,
+      "optional": true,
+      "readiness_level": "optional",
+      "readiness_note": "Optional workflow tool; only needed for specific tasks."
+    },
+    {
+      "name": "pixelle_video",
+      "category": "media",
+      "description": "Pixelle automation launcher.",
+      "intents": [
+        "pixelle",
+        "short video"
+      ],
+      "official_script_path": "D:\\bot\\video\\Pixelle\\Pixelle-Video-v0.1.15-win64\\start.bat",
+      "official_directory": "D:\\bot\\video\\Pixelle\\Pixelle-Video-v0.1.15-win64",
+      "readme_path": "D:\\bot\\video\\Pixelle\\README.md",
+      "skill_path": "C:\\Users\\Administrator\\.openclaw\\workspace\\skills\\pixelle_video\\SKILL.md",
+      "command_templates": [
+        "\"D:\\bot\\video\\Pixelle\\Pixelle-Video-v0.1.15-win64\\start.bat\""
+      ],
+      "expected_help_terms": [],
+      "output_rule": "FILE:file:///D:/bot/outputs/agent_control_center/YYYYMMDD_HHMMSS/<command>.md",
+      "requires_media": true,
+      "requires_network": true,
+      "requires_api_key": false,
+      "requires_login": false,
+      "allows_write_actions": true,
+      "safe_by_default": false,
+      "destructive_risk": false,
+      "paid_api_risk": true,
+      "allowed_platforms": [
+        "local app"
+      ],
+      "disallowed_platforms": [],
+      "disallowed_actions": [],
+      "install_ready_checks": [
+        "script exists"
+      ],
+      "verification_commands": [
+        "Test-Path \"D:\\bot\\video\\Pixelle\\Pixelle-Video-v0.1.15-win64\\start.bat\""
+      ],
+      "route_examples": [
+        "launch pixelle video workflow"
+      ],
+      "notes": "May require external services.",
+      "required_for_core": false,
+      "optional": true,
+      "readiness_level": "optional",
+      "readiness_note": "Optional workflow tool; only needed for specific tasks."
+    },
+    {
+      "name": "self_improving_robot_skill",
+      "category": "automation",
+      "description": "Self-improving workflow tool.",
+      "intents": [
+        "self improving robot"
+      ],
+      "official_script_path": "D:\\bot\\tool\\self_improving_robot_skill\\self_improving_robot.py",
+      "official_directory": "D:\\bot\\tool\\self_improving_robot_skill",
+      "readme_path": "D:\\bot\\tool\\self_improving_robot_skill\\README.md",
+      "skill_path": "C:\\Users\\Administrator\\.openclaw\\workspace\\skills\\self_improving_robot_skill\\SKILL.md",
+      "command_templates": [
+        "py \"D:\\bot\\tool\\self_improving_robot_skill\\self_improving_robot.py\" --help"
+      ],
+      "expected_help_terms": [],
+      "output_rule": "FILE:file:///D:/bot/outputs/agent_control_center/YYYYMMDD_HHMMSS/<command>.md",
+      "requires_media": false,
+      "requires_network": false,
+      "requires_api_key": false,
+      "requires_login": false,
+      "allows_write_actions": true,
+      "safe_by_default": false,
+      "destructive_risk": false,
+      "paid_api_risk": false,
+      "allowed_platforms": [
+        "local files"
+      ],
+      "disallowed_platforms": [],
+      "disallowed_actions": [],
+      "install_ready_checks": [
+        "script exists"
+      ],
+      "verification_commands": [
+        "Test-Path \"D:\\bot\\tool\\self_improving_robot_skill\\self_improving_robot.py\""
+      ],
+      "route_examples": [
+        "iterate safe workflows"
+      ],
+      "notes": "Use with preflight.",
+      "required_for_core": false,
+      "optional": true,
+      "readiness_level": "optional",
+      "readiness_note": "Optional workflow tool; only needed for specific tasks."
+    },
+    {
+      "name": "whisper_audio_tools",
+      "category": "media",
+      "description": "Whisper wrappers for audio transcription.",
+      "intents": [
+        "whisper transcription",
+        "audio text"
+      ],
+      "official_script_path": "D:\\bot\\tool\\whisper_audio_tools\\whisper_audio.py",
+      "official_directory": "D:\\bot\\tool\\whisper_audio_tools",
+      "readme_path": "D:\\bot\\tool\\whisper_audio_tools\\README.md",
+      "skill_path": "C:\\Users\\Administrator\\.openclaw\\workspace\\skills\\whisper_audio_tools\\SKILL.md",
+      "command_templates": [
+        "py \"D:\\bot\\tool\\whisper_audio_tools\\whisper_audio.py\" --input \"{audio_path}\""
+      ],
+      "expected_help_terms": [],
+      "output_rule": "FILE:file:///D:/bot/outputs/agent_control_center/YYYYMMDD_HHMMSS/<command>.md",
+      "requires_media": true,
+      "requires_network": false,
+      "requires_api_key": false,
+      "requires_login": false,
+      "allows_write_actions": true,
+      "safe_by_default": true,
+      "destructive_risk": false,
+      "paid_api_risk": false,
+      "allowed_platforms": [
+        "local files"
+      ],
+      "disallowed_platforms": [],
+      "disallowed_actions": [],
+      "install_ready_checks": [
+        "script exists"
+      ],
+      "verification_commands": [
+        "Test-Path \"D:\\bot\\tool\\whisper_audio_tools\\whisper_audio.py\""
+      ],
+      "route_examples": [
+        "transcribe this wav file"
+      ],
+      "notes": "Optional component.",
+      "required_for_core": false,
+      "optional": true,
+      "readiness_level": "optional",
+      "readiness_note": "Optional workflow tool; only needed for specific tasks."
+    },
+    {
+      "name": "ffmpeg",
+      "category": "system",
+      "description": "ffmpeg command line utility used by media tools.",
+      "intents": [
+        "ffmpeg",
+        "media conversion"
+      ],
+      "official_script_path": "ffmpeg",
+      "official_directory": "C:\\ffmpeg\\bin",
+      "readme_path": "D:\\bot\\tool\\video_audio_analysis\\README.md",
+      "skill_path": "C:\\Users\\Administrator\\.openclaw\\workspace\\skills\\video_audio_analysis\\SKILL.md",
+      "command_templates": [
+        "ffmpeg -version"
+      ],
+      "expected_help_terms": [
+        "ffmpeg version"
+      ],
+      "output_rule": "FILE:file:///D:/bot/outputs/agent_control_center/YYYYMMDD_HHMMSS/<command>.md",
+      "requires_media": false,
+      "requires_network": false,
+      "requires_api_key": false,
+      "requires_login": false,
+      "allows_write_actions": false,
+      "safe_by_default": true,
+      "destructive_risk": false,
+      "paid_api_risk": false,
+      "allowed_platforms": [
+        "windows"
+      ],
+      "disallowed_platforms": [],
+      "disallowed_actions": [],
+      "install_ready_checks": [
+        "ffmpeg available in PATH"
+      ],
+      "verification_commands": [
+        "ffmpeg -version"
+      ],
+      "route_examples": [
+        "check ffmpeg status"
+      ],
+      "notes": "Binary dependency status only.",
+      "required_for_core": false,
+      "optional": false,
+      "readiness_level": "dependency",
+      "readiness_note": "Binary dependency checked via PATH discovery."
+    }
+  ]
+}
