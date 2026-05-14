@@ -32,11 +32,27 @@ def write_reports(cmd, data, lines):
     print(f"FILE:{uri}")
 
 def tool_status(t):
-    script = t.get("official_script_path") or next((p for p in t["candidate_paths"] if exists(p)), t["candidate_paths"][0])
-    se,re,ke = exists(script), exists(t["readme_path"]), exists(t["skill_path"])
+    script = t.get("official_script_path") or ""
+    script_required = t.get("script_required", True)
+    tool_type = t.get("tool_type", "script_tool")
+    se = exists(script) if script else False
+    re_ok = exists(t.get("readme_path", ""))
+    sk_ok = exists(t.get("skill_path", ""))
+    dep_checks = {}
+    if t.get("name") == "agent_reach_safe_research":
+        dep_checks = {
+            "gh_exists": exists(r"D:\bot\github\gh.exe"),
+            "yt_dlp_exists": exists(r"D:\bot\venvs\agent-reach\Scripts\yt-dlp.exe"),
+            "rdt_exists": exists(r"D:\bot\venvs\agent-reach\Scripts\rdt.exe")
+        }
+    if (not script_required) or tool_type == "command_pattern_skill":
+        install_ready = bool(re_ok and sk_ok and all(dep_checks.values() or [True]))
+    else:
+        install_ready = bool(se and re_ok and sk_ok)
     return {
-      "tool_name":t["name"],"category":t["category"],"script_path":script,"readme_path":t["readme_path"],"skill_path":t["skill_path"],
-      "script_exists":se,"readme_exists":re,"skill_exists":ke,"install_ready": bool(se and re and ke)
+      "tool_name": t["name"], "category": t.get("category", "unknown"), "script_path": script, "readme_path": t.get("readme_path", ""), "skill_path": t.get("skill_path", ""),
+      "script_required": script_required, "command_pattern_skill": tool_type == "command_pattern_skill",
+      "script_exists": se, "readme_exists": re_ok, "skill_exists": sk_ok, "dependency_checks": dep_checks, "install_ready": install_ready
     }
 
 def run_help(path):
@@ -101,11 +117,17 @@ def cmd_check_tool(args, tools):
         s["verification_commands"]= [f"Test-Path {q(s['script_path'])}",f"Test-Path {q(s['readme_path'])}",f"Test-Path {q(s['skill_path'])}"]
         s["next_recommended_action"]="Fix missing files" if not s["install_ready"] else "Run business workflow tests"
         if args.run_help or args.deep:
-            ok,txt=run_help(s["script_path"]); s["help_checked"]=True; s["help_ok"]=ok; s["help_error"]="" if ok else txt
+            if s.get("script_required", True) and s.get("script_path"):
+                ok,txt=run_help(s["script_path"]); s["help_checked"]=True; s["help_ok"]=ok; s["help_error"]="" if ok else txt
+            else:
+                s["help_checked"]=False; s["help_ok"]=False; s["help_error"]="help check skipped for command_pattern_skill"
         out.append(s)
     md=["# Agent Control Center Report","","## Executive Summary",f"Checked tools: {len(out)}","","## Tool Status Table"]+[f"- {x['tool_name']}: script={x['script_exists']} readme={x['readme_exists']} skill={x['skill_exists']}" for x in out]
     md += ["","## Problems Found","- Missing files or help failures listed in JSON.","","## Recommended Next Actions","- Run listed Test-Path commands.","","## Verification Commands"]
     for x in out: md += [f"- {c}" for c in x["verification_commands"]]
+    for x in out:
+        if x.get("command_pattern_skill"):
+            md += [f"- {x['tool_name']} command_pattern_skill=true script_required={x.get('script_required')} dependency_checks={x.get('dependency_checks')}"]
     md += ["","## Route Suggestions","- Use route command for user messages.","","## Safety Notes","- This command is read-only.","","## JSON Summary","See JSON report."]
     write_reports("check-tool",{"supported_tool_names":names,"results":out},md)
 
