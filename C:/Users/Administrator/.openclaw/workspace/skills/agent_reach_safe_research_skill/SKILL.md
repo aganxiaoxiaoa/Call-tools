@@ -1,50 +1,54 @@
+---
+name: agent-reach-safe-research-skill
+description: Safe read-only web research skill using Jina Reader, RSS, YouTube metadata/subtitles, GitHub CLI public repo reading, and Reddit read-only CLI.
+---
+
 # agent_reach_safe_research_skill
 
 ## Mission
-A **safe, read-only research skill** for Agent Reach focused on collecting public information only.
+A safe, read-only research skill for Agent Reach focused on collecting public information only.
 
 ## Hard Safety Constraints (Must Follow)
-1. **Read-only only**: no write/actions on external platforms.
-2. **No Chinese app platforms**.
-3. **No cookies** and no authenticated browser sessions.
-4. **No posting/commenting/liking** (also no follow/share/message).
-5. **Do not run** `agent-reach install --env=auto`.
-6. **Do not install**: `mcporter`, `Exa`, `bilibili-cli`, `xiaohongshu`, `douyin`, `weibo`, `xueqiu`, `twitter` tools, `linkedin` tools.
-7. Do not modify Agent-Reach source code.
+1. Read-only only: no write/actions on external platforms.
+2. No Chinese app platforms.
+3. No cookies.
+4. No logged-in browser sessions.
+5. No posting/commenting/liking/following/sharing/messaging.
+6. Do not run `agent-reach install --env=auto`.
+7. Do not install `mcporter`, `Exa`, `bilibili-cli`, `xiaohongshu`, `douyin`, `weibo`, `xueqiu`, `twitter` tools, or `linkedin` tools.
+8. Do not modify Agent-Reach source code.
 
 ## Allowed Tools (Only)
 1. Web page reading via Jina Reader
 2. RSS reading
-3. YouTube info/subtitle reading via yt-dlp
+3. YouTube metadata/subtitle reading via yt-dlp
 4. GitHub public repo reading via gh
 5. Reddit read-only via rdt-cli
 
-If a requested action needs any tool outside this list, refuse and offer a compliant read-only alternative.
-
-## Approved Command Patterns
-### Web page reading (Jina Reader)
+## Approved Command Patterns (Absolute, Read-Only)
+### Web page reading
 ```bash
-curl "https://r.jina.ai/http://example.com"
+curl.exe "https://r.jina.ai/http://example.com"
 ```
 
-### YouTube metadata/subtitles (read-only)
+### YouTube metadata/subtitles
 ```bash
-yt-dlp --dump-json "URL"
+"D:\bot\venvs\agent-reach\Scripts\yt-dlp.exe" --dump-json "URL"
 ```
 
-### GitHub public repository inspection (read-only)
+### GitHub public repo reading
 ```bash
-gh repo view owner/repo --json name,description,url,stargazerCount,updatedAt
+"D:\bot\github\gh.exe" repo view owner/repo --json name,description,url,stargazerCount,updatedAt
 ```
 
 ### Reddit read-only
 ```bash
-rdt search "query"
-rdt read "url"
+"D:\bot\venvs\agent-reach\Scripts\rdt.exe" search "query"
+"D:\bot\venvs\agent-reach\Scripts\rdt.exe" read "url"
 ```
 
 ### RSS reading
-Use any read-only RSS fetch/parse flow that does not require login, cookies, or posting.
+Use Python `feedparser` in read-only mode only. Do not require login/cookies.
 
 ## Default Usage
 - Web research
@@ -53,11 +57,5 @@ Use any read-only RSS fetch/parse flow that does not require login, cookies, or 
 - Reddit read-only browsing
 - RSS-only monitoring
 
-## Refusal Policy
-Refuse requests that involve:
-- posting, commenting, liking, voting, DMing, following, account growth
-- login/session/cookie-dependent scraping
-- Chinese app platform operations
-- installation or use of disallowed tools
-
-When refusing, provide a safe alternative using only allowed read-only tools.
+## Refusal Rule
+If a user asks for Chinese app platforms, cookies, posting, commenting, liking, following, messaging, or account automation, refuse and offer a safe read-only alternative.
