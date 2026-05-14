@@ -54,7 +54,11 @@
       "route_examples": [
         "Create a product page for private label oils"
       ],
-      "notes": "Use after research when possible."
+      "notes": "Use after research when possible.",
+      "required_for_core": true,
+      "optional": false,
+      "readiness_level": "core",
+      "readiness_note": "Required for core governance and delivery workflows."
     },
     {
       "name": "image_analysis_skill",
@@ -106,7 +110,11 @@
       "route_examples": [
         "Analyze this image because cap looks fake"
       ],
-      "notes": "Requires image path."
+      "notes": "Requires image path.",
+      "required_for_core": true,
+      "optional": false,
+      "readiness_level": "core",
+      "readiness_note": "Required for core governance and delivery workflows."
     },
     {
       "name": "graphic_design_analyzer_skill",
@@ -151,7 +159,11 @@
       "route_examples": [
         "Check typography and visual hierarchy"
       ],
-      "notes": "Design-focused routing."
+      "notes": "Design-focused routing.",
+      "required_for_core": false,
+      "optional": true,
+      "readiness_level": "optional",
+      "readiness_note": "Optional workflow tool; only needed for specific tasks."
     },
     {
       "name": "agent_reach_safe_research",
@@ -238,7 +250,11 @@
       ],
       "notes": "Do not use for Chinese app platforms.",
       "tool_type": "command_pattern_skill",
-      "script_required": false
+      "script_required": false,
+      "required_for_core": true,
+      "optional": false,
+      "readiness_level": "core",
+      "readiness_note": "Required for core governance and delivery workflows."
     },
     {
       "name": "autopilot_operator_skill",
@@ -283,7 +299,11 @@
       "route_examples": [
         "Build low-risk plan"
       ],
-      "notes": "Call agent_control_center route/preflight first."
+      "notes": "Call agent_control_center route/preflight first.",
+      "required_for_core": true,
+      "optional": false,
+      "readiness_level": "core",
+      "readiness_note": "Required for core governance and delivery workflows."
     },
     {
       "name": "disk_cleaner",
@@ -327,7 +347,11 @@
       "route_examples": [
         "scan disk usage"
       ],
-      "notes": "Scan-only default."
+      "notes": "Scan-only default.",
+      "required_for_core": false,
+      "optional": true,
+      "readiness_level": "optional",
+      "readiness_note": "Optional workflow tool; only needed for specific tasks."
     },
     {
       "name": "facefusion_tools",
@@ -371,7 +395,11 @@
       "route_examples": [
         "swap face in local video"
       ],
-      "notes": "Require explicit confirmation."
+      "notes": "Require explicit confirmation.",
+      "required_for_core": false,
+      "optional": true,
+      "readiness_level": "optional",
+      "readiness_note": "Optional workflow tool; only needed for specific tasks."
     },
     {
       "name": "content_ops",
@@ -411,7 +439,11 @@
       "route_examples": [
         "prepare publishing pipeline"
       ],
-      "notes": "Optional helper."
+      "notes": "Optional helper.",
+      "required_for_core": false,
+      "optional": true,
+      "readiness_level": "optional",
+      "readiness_note": "Optional workflow tool; only needed for specific tasks."
     },
     {
       "name": "video_audio_analysis",
@@ -454,7 +486,11 @@
       "route_examples": [
         "transcribe video"
       ],
-      "notes": "May depend on ffmpeg."
+      "notes": "May depend on ffmpeg.",
+      "required_for_core": false,
+      "optional": true,
+      "readiness_level": "optional",
+      "readiness_note": "Optional workflow tool; only needed for specific tasks."
     },
     {
       "name": "pixelle_video",
@@ -495,7 +531,11 @@
       "route_examples": [
         "launch pixelle video workflow"
       ],
-      "notes": "May require external services."
+      "notes": "May require external services.",
+      "required_for_core": false,
+      "optional": true,
+      "readiness_level": "optional",
+      "readiness_note": "Optional workflow tool; only needed for specific tasks."
     },
     {
       "name": "self_improving_robot_skill",
@@ -535,7 +575,11 @@
       "route_examples": [
         "iterate safe workflows"
       ],
-      "notes": "Use with preflight."
+      "notes": "Use with preflight.",
+      "required_for_core": false,
+      "optional": true,
+      "readiness_level": "optional",
+      "readiness_note": "Optional workflow tool; only needed for specific tasks."
     },
     {
       "name": "whisper_audio_tools",
@@ -576,7 +620,11 @@
       "route_examples": [
         "transcribe this wav file"
       ],
-      "notes": "Optional component."
+      "notes": "Optional component.",
+      "required_for_core": false,
+      "optional": true,
+      "readiness_level": "optional",
+      "readiness_note": "Optional workflow tool; only needed for specific tasks."
     },
     {
       "name": "ffmpeg",
@@ -619,7 +667,11 @@
       "route_examples": [
         "check ffmpeg status"
       ],
-      "notes": "Binary dependency status only."
+      "notes": "Binary dependency status only.",
+      "required_for_core": false,
+      "optional": false,
+      "readiness_level": "dependency",
+      "readiness_note": "Binary dependency checked via PATH discovery."
     }
   ]
 }

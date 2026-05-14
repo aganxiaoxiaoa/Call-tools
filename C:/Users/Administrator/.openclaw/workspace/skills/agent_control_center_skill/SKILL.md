@@ -171,3 +171,13 @@ Before saying "can install", verify:
 5. --help works where applicable
 6. command-pattern skills have required dependencies
 7. no duplicate or wrong-path files are being used
+
+
+## Readiness Level Guidance
+Use registry readiness metadata when reporting:
+- core
+- recommended
+- optional
+- dependency
+
+Do not present optional tool gaps as urgent if core tools are ready.

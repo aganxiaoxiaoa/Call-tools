@@ -49,3 +49,12 @@ Every command must end with:
 
 ## Autopilot integration note
 `autopilot_operator_skill` must consume route/preflight results from this tool before any execution.
+
+
+## Readiness levels
+- core: required for baseline operation
+- recommended: useful default additions
+- optional: install only when that workflow is needed
+- dependency: binary/runtime dependency status
+
+Doctor separates core vs optional readiness to avoid misleading urgent repair advice.
