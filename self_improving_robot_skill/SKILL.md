@@ -19,3 +19,8 @@ description: Long-term memory, autonomous code writing, code validation, self-fi
 5. 路径有空格必须加引号。
 
 能力边界：本 Skill 不是独立大模型；负责计划、落盘、备份、检查、修复常见错误、写入长期记忆。复杂业务逻辑代码需 OpenClaw 主模型/Codex 生成核心内容。
+
+Registry boundary:
+- agent_control_center is the only master registry.
+- `D:\bot\store\03_tool_registry\tools_registry.json` is local memory cache only.
+- Never directly edit `D:\bot\tool\agent_control_center_skill\tool_registry.json`.

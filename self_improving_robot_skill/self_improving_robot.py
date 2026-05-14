@@ -31,6 +31,13 @@ def jl_read(p):
         except Exception: pass
     return out
 
+def file_uri(path: Path) -> str:
+    return "FILE:file:///" + str(path).replace("\\", "/")
+
+def print_report(path: Path):
+    print(f"已保存: {path}")
+    print(file_uri(Path(path)))
+
 def load_seed():
     for p in [WIN_SEED, LOCAL_SEED]:
         if p.exists():
@@ -75,7 +82,7 @@ def code_plan(a):
     plan={"request":a.request,"tool_name":a.tool_name,"target_dir":a.target_dir,"language":a.language,"template_type":t,"files_to_create":files,"files_to_modify":[],"required_arguments":["--input","--output-dir","--json"] if t=="cli_tool" else ["--name"],"output_contract":{"stdout":"human+json summary"},"test_commands":[f'py "{a.target_dir}\\{a.tool_name}.py" --help'] ,"acceptance_criteria":["files created","py_compile ok","help ok"],"risk_level":"low" if "test" in a.request.lower() else "medium","memory_writes":["05_workflows/code_plans","02_task_memory/code_task_log.jsonl"],"llm_note":"复杂业务逻辑需要 OpenClaw 主模型/Codex 参与生成核心逻辑；本工具负责模板落盘、检查、修复、记忆"}
     jp=STORE_ROOT/f"05_workflows/code_plans/code_plan_{ts()}.json"; mp=STORE_ROOT/f"05_workflows/code_plans/code_plan_{ts()}.md"
     jdump(jp,plan); write(mp,"# code-plan\n\n"+json.dumps(plan,ensure_ascii=False,indent=2)); log_code("code-plan","success","计划已生成",{"plan":str(jp)})
-    print(f"已保存: {jp}\n已保存: {mp}")
+    print_report(jp); print_report(mp)
 
 def render_by_template(plan):
     n=plan["tool_name"]
@@ -105,7 +112,7 @@ def code_generate(a):
         write(p,c); created.append(str(p))
     rpt=STORE_ROOT/f"07_outputs/code_reports/code_generate_{ts()}.md"; write(rpt,"# code-generate\n"+json.dumps({"created_files":created,"backups":backups},ensure_ascii=False,indent=2))
     log_code("code-generate","success","代码已生成",{"created_files":created,"backups":backups,"report":str(rpt)})
-    print(f"已保存: {rpt}")
+    print_report(rpt)
 
 def issue(t,f,msg): return {"type":t,"file":str(f),"message":msg}
 
@@ -139,7 +146,7 @@ def code_check(a):
     jp=STORE_ROOT/f"07_outputs/maintenance/code_check_{ts()}.json"; mp=STORE_ROOT/f"07_outputs/maintenance/code_check_{ts()}.md"
     jdump(jp,rep); write(mp,"# code-check\n\n"+json.dumps(rep,ensure_ascii=False,indent=2)); log_code("code-check","success" if rep["ok"] else "fail","代码检查",{"report":str(jp)})
     if issues: jl_append(STORE_ROOT/"06_error_lessons/code_error_log.jsonl",{"time":ts(),"report":str(jp),"issues":issues})
-    print(f"已保存: {jp}\n已保存: {mp}")
+    print_report(jp); print_report(mp)
     return jp
 
 def code_fix(a):
@@ -155,9 +162,11 @@ def code_fix(a):
         fixed=0
         for i in issues:
             t=i.get("type"); f=Path(i.get("file",""))
+            if not a.yes:
+                continue
             if t in ["missing_readme","missing_examples","missing_skill_md"]:
                 write(f,"# auto-generated\n"); fixed+=1; continue
-            if not f.exists() or not a.yes: continue
+            if not f.exists(): continue
             b=backup(f)
             if b: all_backups.append(b)
             txt=f.read_text(encoding="utf-8",errors="ignore")
@@ -178,7 +187,7 @@ def code_fix(a):
     write(rpt,"# code-fix\n"+json.dumps({"fixed_count":total_fixed,"backups":all_backups,"rounds":rounds,"final_ok":final.get("ok"),"final_issues":final.get("issues",[])},ensure_ascii=False,indent=2))
     log_code("code-fix","success" if final.get("ok") else "fail","自动修复",{"report":str(rpt),"rounds":rounds})
     if not final.get("ok"): jl_append(STORE_ROOT/"06_error_lessons/code_error_log.jsonl",{"time":ts(),"source":"code-fix","error":"remaining_issues","issues":final.get("issues",[])})
-    print(f"已保存: {rpt}")
+    print_report(rpt)
 
 def code_cycle(a):
     code_plan(a)
@@ -196,7 +205,7 @@ def code_cycle(a):
     cjp=STORE_ROOT/f"05_workflows/code_cycles/code_cycle_{ts()}.json"; cmp=STORE_ROOT/f"05_workflows/code_cycles/code_cycle_{ts()}.md"; rp=STORE_ROOT/f"07_outputs/code_reports/code_cycle_{ts()}.md"
     jdump(cjp,cyc); write(cmp,"# code-cycle\n\n"+json.dumps(cyc,ensure_ascii=False,indent=2)); write(rp,"# code-cycle report\n\n"+json.dumps(cyc,ensure_ascii=False,indent=2)); log_code("code-cycle",cyc["final_status"],"代码循环",{"report":str(rp)})
     if rep.get("ok"): jl_append(STORE_ROOT/"04_skill_memory/learned_skills.jsonl",{"time":ts(),"from":"code-cycle","lesson":"成功模板", "tool":a.tool_name})
-    print(f"已保存: {cjp}\n已保存: {cmp}\n已保存: {rp}")
+    print_report(cjp); print_report(cmp); print_report(rp)
 
 def registry_audit(a):
     roots=[TOOL_ROOT,TOOLS_ROOT,STORE_ROOT,WORKSPACE,SKILLS_ROOT]
@@ -236,7 +245,7 @@ def registry_audit(a):
         if isinstance(s.get("generated_at"),str) and isinstance(s.get("audit_summary"),dict) and isinstance(s.get("tools"),list) and all(isinstance(x,dict) and x.get("name") for x in s.get("tools",[])):
             jdump(STORE_ROOT/"03_tool_registry/tools_registry.json",{"tools":s["tools"]})
         else: print("拒绝应用: suggested registry 结构不完整")
-    print(f"已保存: {rpt}")
+    print_report(rpt)
 
 def skill_health(_):
     reg=jload(STORE_ROOT/"03_tool_registry/tools_registry.json",{"tools":[]}).get("tools",[])
@@ -263,7 +272,7 @@ def skill_health(_):
         rows.append({"name":t.get("name"),"existing_paths":ex,"missing_paths":miss,"selected_main_path":str(main),"readme_exists":readme.exists(),"skill_md_exists":skill.exists(),"py_compile_ok":pyc_ok,"help_ok":help_ok,"banned_tokens":banned,"missing_candidate_paths":missing_candidate_paths,"paid_api_risk":t.get('paid_api_risk'),"destructive_risk":t.get('destructive_risk'),"score":score,"recommendation":"补全candidate_paths" if missing_candidate_paths else "继续维护"})
     avg=round(sum([x['score'] for x in rows])/max(1,len(rows)),2)
     jdump(STORE_ROOT/"03_tool_registry/tool_health.json",{"updated_at":ts(),"score":avg,"tools":rows})
-    rpt=STORE_ROOT/f"07_outputs/maintenance/skill_health_{ts()}.md"; write(rpt,"# skill-health\n\n"+json.dumps({"score":avg,"tools":rows},ensure_ascii=False,indent=2)); print(f"已保存: {rpt}")
+    rpt=STORE_ROOT/f"07_outputs/maintenance/skill_health_{ts()}.md"; write(rpt,"# skill-health\n\n"+json.dumps({"score":avg,"tools":rows},ensure_ascii=False,indent=2)); print_report(rpt)
 
 def create_skill(a):
     init_store(False)
@@ -280,7 +289,7 @@ def create_skill(a):
     reg=jload(STORE_ROOT/"03_tool_registry/tools_registry.json",{"tools":[]}); reg.setdefault("tools",[]).append({"name":a.name,"candidate_paths":[str(tdir/f"{a.name}.py")],"description":a.request,"command_examples":[f'py "{tdir/(a.name+".py")}" --help'],"intents":["generated"],"risk_level":"low","requires_media":False,"requires_api_key":False,"paid_api_risk":False,"destructive_risk":False}); jdump(STORE_ROOT/"03_tool_registry/tools_registry.json",reg)
     jl_append(STORE_ROOT/"04_skill_memory/generated_skills.jsonl",{"time":ts(),"name":a.name,"status":"ok" if rep.get('ok') else "check_failed"})
     rpt=STORE_ROOT/f"07_outputs/code_reports/create_skill_{ts()}.md"; write(rpt,"# create-skill\n\n"+json.dumps({"check_ok":rep.get('ok'),"tool_report":str(chk_tool),"skill_report":str(chk_skill)},ensure_ascii=False,indent=2)); log_code("create-skill","success" if rep.get('ok') else "fail","创建技能",{"report":str(rpt)})
-    print(f"已保存: {rpt}")
+    print_report(rpt)
 
 def upgrade_tool(a):
     reg=jload(STORE_ROOT/"03_tool_registry/tools_registry.json",{"tools":[]})
@@ -290,7 +299,12 @@ def upgrade_tool(a):
     if not path: return print("工具路径不存在")
     plan={"tool":a.tool,"path":str(path),"request":a.request,"mode":"plan_only","next":"provide --patch-file to apply"}
     plan_file=STORE_ROOT/f"07_outputs/code_reports/upgrade_plan_{ts()}.json"; jdump(plan_file,plan)
-    if not getattr(a,'patch_file',None): log_code("upgrade-tool","planned","仅生成升级计划",{"plan":str(plan_file)}); return print(f"已保存: {plan_file}")
+    if not getattr(a,'patch_file',None): log_code("upgrade-tool","planned","仅生成升级计划",{"plan":str(plan_file)}); return print_report(plan_file)
+    if not a.yes:
+        dry=STORE_ROOT/f"07_outputs/code_reports/upgrade_tool_dry_run_{ts()}.md"
+        write(dry,json.dumps({"tool":a.tool,"patch_file":a.patch_file,"status":"dry-run","message":"提供了 --patch-file 但缺少 --yes，未修改任何文件"},ensure_ascii=False,indent=2))
+        log_code("upgrade-tool","dry-run","缺少--yes，未执行修改",{"report":str(dry)})
+        return print_report(dry)
     patch=jload(Path(a.patch_file),{})
     if not isinstance(patch,dict) or patch.get('type') not in ['replace','write_file','append_safe']: return print("patch-file 无效")
     target=Path(patch.get('file',str(path)))
@@ -312,7 +326,7 @@ def upgrade_tool(a):
     log_code("upgrade-tool",status,"升级执行",{"report":str(rpt)})
     if not rep.get('ok'):
         jl_append(STORE_ROOT/"06_error_lessons/code_error_log.jsonl",{"time":ts(),"source":"upgrade-tool","tool":a.tool,"check_report":str(chk),"issues":rep.get("issues",[]),"patch_file":a.patch_file,"backup_path":b})
-    print(f"已保存: {rpt}")
+    print_report(rpt)
 
 # minimal legacy memory commands
 

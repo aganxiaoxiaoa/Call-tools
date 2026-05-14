@@ -40,3 +40,9 @@ py "D:\bot\tool\self_improving_robot_skill\self_improving_robot.py" skill-health
 - 代码任务日志：`D:\bot\store\02_task_memory\code_task_log.jsonl`
 - 代码报告：`D:\bot\store\07_outputs\code_reports`
 - 检查报告：`D:\bot\store\07_outputs\maintenance`
+
+## Registry safety
+- `agent_control_center` is the only master registry owner.
+- `D:\bot\store\03_tool_registry\tools_registry.json` is local memory/cache for this tool only.
+- 本工具不会直接修改 `D:\bot\tool\agent_control_center_skill\tool_registry.json`。
+- registry-audit 以建议报告为主。
