@@ -114,7 +114,10 @@ def cmd_check_tool(args, tools):
     out=[]
     for t in selected:
         s=tool_status(t)
-        s["verification_commands"]= [f"Test-Path {q(s['script_path'])}",f"Test-Path {q(s['readme_path'])}",f"Test-Path {q(s['skill_path'])}"]
+        if (not s.get("script_required", True)) or s.get("command_pattern_skill", False):
+            s["verification_commands"] = t.get("verification_commands", [])
+        else:
+            s["verification_commands"]= [f"Test-Path {q(s['script_path'])}",f"Test-Path {q(s['readme_path'])}",f"Test-Path {q(s['skill_path'])}"]
         s["next_recommended_action"]="Fix missing files" if not s["install_ready"] else "Run business workflow tests"
         if args.run_help or args.deep:
             if s.get("script_required", True) and s.get("script_path"):
@@ -247,7 +250,7 @@ def cmd_doctor(args,tools):
     env={"D_bot_exists":exists(r"D:\bot"),"D_bot_tool_exists":exists(r"D:\bot\tool"),"openclaw_config_exists":exists(r"C:\Users\Administrator\.openclaw\openclaw.json"),"openclaw_skills_exists":SKILLS_ROOT.exists(),"py_exists":bool(shutil.which("py") or shutil.which("python")),"powershell_exists":bool(shutil.which("powershell") or shutil.which("pwsh")),"openclaw_cmd_exists":bool(shutil.which("openclaw")),"HTTP_PROXY_exists":bool(os.getenv("HTTP_PROXY")),"HTTPS_PROXY_exists":bool(os.getenv("HTTPS_PROXY")),"DASHSCOPE_API_KEY_exists":bool(os.getenv("DASHSCOPE_API_KEY")),"LOCAL_VISION_BASE_URL_exists":bool(os.getenv("LOCAL_VISION_BASE_URL")),"LOCAL_VISION_MODEL_exists":bool(os.getenv("LOCAL_VISION_MODEL"))}
     old_tools_path_usage=[t["tool_name"] for t in st if "D:\\bot\\tools" in (t.get("script_path") or "") or "D:\\bot\\tools" in (t.get("readme_path") or "")]
     unsafe_marked_safe=[t["tool_name"] for t,treg in zip(st,tools) if treg.get("destructive_risk") and treg.get("safe_by_default")]
-    data={"overall_status":"ready" if not not_ready else "partial","ready_tools":ready,"not_ready_tools":not_ready,"missing_scripts":[x['tool_name'] for x in st if not x['script_exists']],"missing_skills":[x['tool_name'] for x in st if not x['skill_exists']],"help_failed_tools":[],"duplicate_risks":[],"old_entry_risks":old_tools_path_usage,"unsafe_tools_marked_safe":unsafe_marked_safe,"environment_status":env,"next_best_actions":["Fix missing files","Run check-tool --tool all --deep"],"recommended_verification_commands":["py \"D:\\bot\\tool\\agent_control_center_skill\\agent_control_center.py\" status --deep","py \"D:\\bot\\tool\\agent_control_center_skill\\agent_control_center.py\" verify-openclaw-skills"]}
+    data={"overall_status":"ready" if not not_ready else "partial","ready_tools":ready,"not_ready_tools":not_ready,"missing_scripts":[x['tool_name'] for x in st if x.get('script_required',True) and not x['script_exists']],"missing_skills":[x['tool_name'] for x in st if not x['skill_exists']],"help_failed_tools":[],"duplicate_risks":[],"old_entry_risks":old_tools_path_usage,"unsafe_tools_marked_safe":unsafe_marked_safe,"environment_status":env,"next_best_actions":["Fix missing files","Run check-tool --tool all --deep"],"recommended_verification_commands":["py \"D:\\bot\\tool\\agent_control_center_skill\\agent_control_center.py\" status --deep","py \"D:\\bot\\tool\\agent_control_center_skill\\agent_control_center.py\" verify-openclaw-skills"]}
     md=["# Agent Control Center Report","","## Executive Summary",f"overall_status={data['overall_status']}","","## Tool Status Table"]+[f"- {x['tool_name']}: ready={x['install_ready']}" for x in st]
     md += ["","## Problems Found"]+[f"- not_ready_tool: {x}" for x in not_ready] + ["","## Recommended Next Actions"]+[f"- {x}" for x in data["next_best_actions"]]+["","## Verification Commands"]+[f"- {x}" for x in data["recommended_verification_commands"]]+["","## Route Suggestions","- Use route command.","","## Safety Notes","- Secrets are never printed.","","## JSON Summary","See JSON report."]
     write_reports("doctor",data,md)
