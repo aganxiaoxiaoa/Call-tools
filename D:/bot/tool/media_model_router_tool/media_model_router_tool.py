@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-import argparse, base64, datetime as dt, json, os, pathlib, subprocess, sys
+import argparse, base64, datetime as dt, json, os, pathlib
 from urllib import request, error
 
 BASE_OUTPUT = pathlib.Path("D:/bot/outputs/media_model_router_tool")
@@ -147,9 +147,8 @@ def recommendation(task, quality, media, model, provider):
         if v: return {**rec,"provider":"openai","model":v}
         vids = filter_or_models(rm,"video",False,True)
         return {**rec,"provider":"openrouter","model": vids[0]["id"] if vids else None}
-    if "transcript" in t or "translate" in t or "summarize" in t or media in ("audio","mixed"):
-        free = filter_or_models(rm,"video",True,True)
-        return {**rec,"provider":"openrouter","workflow":"free-first video/audio understanding", "preferred_model": free[0]["id"] if free else None, "fallback":"extract audio via ffmpeg then cheap/free text model; exact transcript may require local Whisper or paid transcription"}
+    if "transcript" in t or "translate" in t or "summarize" in t or "analyze video audio" in t:
+        return {**rec,"provider":"existing_local_qwen_omni_watcher","tool":"video_audio_auto.py","path":"D:/bot/openclaw_data/.openclaw/scripts/video_audio_auto.py","model":"qwen-omni-turbo","key":"DASHSCOPE_API_KEY","workflow":["send/upload video to OpenClaw media/inbound","existing watcher detects video","Qwen-Omni analyzes audio/video","Telegram receives original transcript, Chinese translation, and summary"]}
     imgs = filter_or_models(rm,"image",quality=="free",True)
     return {**rec,"provider":"openrouter","model": imgs[0]["id"] if imgs else None}
 
@@ -194,16 +193,57 @@ def cmd_download_openrouter_video(args):
 
 def cmd_analyze_video_audio(args):
     out=run_dir("analyze-video-audio")
-    data={"provider":"openrouter","video":args.video,"quality":args.quality,"free_first":args.free_first,"translate_zh":args.translate_zh,"summarize":args.summarize,"workflow":[]}
-    data["workflow"].append("Try OpenRouter model with video/audio input support (free-first).")
-    data["workflow"].append("Fallback: ffmpeg extract audio.wav then use cheap/free text model for translation/summarization.")
-    wav=out/"audio.wav"
-    try:
-        subprocess.run(["ffmpeg","-y","-i",args.video,str(wav)],check=False,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
-        data["audio_extracted_path"]=str(wav)
-    except Exception as e: data["ffmpeg_error"]=str(e)
-    data["warning"]="Exact transcript may require local Whisper or paid transcription."
+    data={
+        "message":"This function is already handled by the existing Qwen-Omni video_audio_auto watcher.",
+        "provider":"existing_local_qwen_omni_watcher",
+        "tool":"video_audio_auto.py",
+        "official_script_path":"D:/bot/openclaw_data/.openclaw/scripts/video_audio_auto.py",
+        "clean_reference_path":"D:/bot/video_audio_auto_clean/video_audio_auto.py",
+        "expected_model":"qwen-omni-turbo",
+        "expected_env_keys":["DASHSCOPE_API_KEY","QWEN_OMNI_MODEL"],
+        "video_input_location":"D:/bot/openclaw_data/.openclaw/media/inbound (or configured inbound media folder)",
+        "log_hint":"Check watcher runtime logs and video_audio_auto.log for processing status.",
+        "video":args.video,
+        "note":"No new transcription pipeline is implemented here. No Whisper/ffmpeg transcription is performed."
+    }
     write_reports(out,"analyze-video-audio",data)
+
+
+
+def cmd_video_audio_status(_):
+    out=run_dir("video-audio-status")
+    official=pathlib.Path("D:/bot/openclaw_data/.openclaw/scripts/video_audio_auto.py")
+    clean=pathlib.Path("D:/bot/video_audio_auto_clean/video_audio_auto.py")
+    openclaw=pathlib.Path("D:/bot/openclaw_data/.openclaw/openclaw.json")
+    media_dirs=[
+        pathlib.Path("D:/bot/openclaw_data/.openclaw/media/inbound"),
+        pathlib.Path("D:/bot/openclaw_data/.openclaw/media"),
+    ]
+    log_path=pathlib.Path("D:/bot/openclaw_data/.openclaw/scripts/video_audio_auto.log")
+    has_dashscope=False
+    qwen_model=None
+    if openclaw.exists():
+        try:
+            txt=openclaw.read_text(encoding="utf-8",errors="ignore")
+            has_dashscope=("DASHSCOPE_API_KEY" in txt)
+            qwen_model=os.getenv("QWEN_OMNI_MODEL") or ("qwen-omni-turbo" if "qwen-omni-turbo" in txt else None)
+        except Exception:
+            pass
+    data={
+        "official_script_exists":official.exists(),
+        "clean_reference_exists":clean.exists(),
+        "openclaw_json_path":str(openclaw),
+        "openclaw_has_dashscope_key_field":has_dashscope,
+        "qwen_omni_model":qwen_model or "qwen-omni-turbo (default)",
+        "media_inbound_exists":media_dirs[0].exists(),
+        "media_dir_exists":media_dirs[1].exists(),
+        "video_audio_log_exists":log_path.exists(),
+        "official_script_path":str(official),
+        "clean_reference_path":str(clean),
+        "log_path":str(log_path),
+        "note":"API key values are intentionally not printed."
+    }
+    write_reports(out,"video-audio-status",data)
 
 def cmd_qc_plan(args):
     qc=["image_analysis_skill --image \"...\" --check realism,label,text,geometry,materials,lighting"]
@@ -225,6 +265,7 @@ def main():
     a=sp.add_parser("poll-openrouter-video"); a.add_argument("--job-id"); a.add_argument("--status-url"); a.set_defaults(func=cmd_poll_openrouter_video)
     a=sp.add_parser("download-openrouter-video"); a.add_argument("--url"); a.add_argument("--job-id"); a.add_argument("--output-dir"); a.set_defaults(func=cmd_download_openrouter_video)
     a=sp.add_parser("analyze-video-audio"); a.add_argument("--video",required=True); a.add_argument("--model"); a.add_argument("--provider",default="openrouter"); a.add_argument("--quality",choices=["free","cheap","medium"],default="free"); a.add_argument("--free-first",action="store_true",default=True); a.add_argument("--translate-zh",action="store_true",default=True); a.add_argument("--summarize",action="store_true",default=True); a.set_defaults(func=cmd_analyze_video_audio)
+    sp.add_parser("video-audio-status").set_defaults(func=cmd_video_audio_status)
     a=sp.add_parser("qc-plan"); a.add_argument("--image",required=True); a.add_argument("--use-case",required=True); a.add_argument("--brand"); a.add_argument("--media-type",choices=["image","banner","ad","product","website"],required=True); a.set_defaults(func=cmd_qc_plan)
     args=p.parse_args(); args.func(args)
 

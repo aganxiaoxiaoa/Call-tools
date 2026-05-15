@@ -1,7 +1,7 @@
 # media_model_router_tool
 
 ## Purpose
-Task-level media model routing and execution for image generation/editing, video generation, media understanding, transcript/translation/summarization, and model recommendation.
+Task-level media model routing and execution for image generation/editing, video generation, media understanding routing, and model recommendation.
 
 This tool **does not switch the global OpenClaw model**. Global chat model remains **DeepSeek official V4 Pro** (`deepseek/deepseek-v4-pro`).
 
@@ -13,6 +13,7 @@ This tool **does not switch the global OpenClaw model**. Global chat model remai
 ## Environment variables
 - `OPENAI_API_KEY`
 - `OPENROUTER_API_KEY`
+- Existing watcher related: `DASHSCOPE_API_KEY`, optional `QWEN_OMNI_MODEL`
 
 Never print or store API keys.
 
@@ -22,9 +23,17 @@ Uses standard environment proxy variables automatically:
 - `HTTPS_PROXY`
 
 ## Routing policy
-- OpenAI: high-quality image/video where quality realism/label/layout consistency matters.
-- OpenRouter: medium/cheap/free exploratory images, video generation fallback, video/audio understanding, free-first workflows.
+- OpenAI: high-quality image generation/editing and high-quality video when available.
+- OpenRouter: medium/cheap/free exploratory images, video generation fallback, and model recommendation.
+- Existing local Qwen-Omni watcher: video/audio transcription + translation + summary workflow.
 - User-specified model override: validate availability + modality compatibility; no silent fallback.
+
+## Important: existing transcription workflow
+Video/audio transcription is already handled by:
+- `D:/bot/openclaw_data/.openclaw/scripts/video_audio_auto.py`
+- clean reference: `D:/bot/video_audio_auto_clean/video_audio_auto.py`
+
+`media_model_router_tool` only routes/recommends this workflow and provides status checks. It does **not** duplicate transcription logic, create a new watcher, or replace this path with OpenRouter unless explicitly requested later.
 
 ## OpenAI high-quality rule
 OpenAI image priority: `gpt-image-2 > gpt-image-1.5 > gpt-image-1-mini > chatgpt-image-latest`.
@@ -48,12 +57,12 @@ Paid generation commands require `--yes`. Without it, dry-run only.
 ## Examples
 - `py "D:/bot/tool/media_model_router_tool/media_model_router_tool.py" test-keys`
 - `py "D:/bot/tool/media_model_router_tool/media_model_router_tool.py" recommend --task "high quality website hero image" --quality high --media-type image`
-- `py "D:/bot/tool/media_model_router_tool/media_model_router_tool.py" generate-openai-image --prompt "premium product hero" --yes`
+- `py "D:/bot/tool/media_model_router_tool/media_model_router_tool.py" video-audio-status`
 
 ## Acceptance tests
-Run the command set in your task spec (Test-Path, --help, test-keys, refresh-model-cache, list-models, recommend, qc-plan). All report-producing commands end with `FILE:file:///...`.
+Run the command set in your task spec (Test-Path, --help, test-keys, refresh-model-cache, list-models, recommend, `video-audio-status`, qc-plan). All report-producing commands end with `FILE:file:///...`.
 
 ## Troubleshooting
 - Missing key: set env vars before running.
 - API unavailable: run `test-keys` and inspect generated report.
-- No suitable free model: use `recommend --quality cheap` for fallback.
+- Existing video/audio watcher issues: run `video-audio-status` and inspect script path/log availability.

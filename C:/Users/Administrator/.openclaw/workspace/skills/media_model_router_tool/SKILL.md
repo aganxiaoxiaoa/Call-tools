@@ -11,10 +11,13 @@ This is an optional skill, not a core skill.
 - Do not switch the global model.
 - Global chat model remains DeepSeek official V4 Pro.
 - OpenAI is used for high-quality images and high-quality video when available.
-- OpenRouter is used for medium images, cheap images, free models, video generation, and video/audio understanding.
+- OpenRouter is used for medium images, cheap images, free models, video generation, and model recommendation.
+- Video/audio transcription is already handled by existing Qwen-Omni watcher script (`D:/bot/openclaw_data/.openclaw/scripts/video_audio_auto.py`).
+- `media_model_router_tool` only routes/recommends that existing video/audio watcher workflow.
+- Do not duplicate transcription logic. Do not add a second watcher. Do not replace Qwen-Omni transcription path unless explicitly requested later.
 - User-specified model override is supported and validated for compatibility.
 - Paid generation requires `--yes`.
-- API keys come only from environment variables (`OPENAI_API_KEY`, `OPENROUTER_API_KEY`).
+- API keys come only from environment variables (`OPENAI_API_KEY`, `OPENROUTER_API_KEY`, existing watcher key `DASHSCOPE_API_KEY`).
 - Final generated images require QC.
 - Product/realism QC: `image_analysis_skill`.
 - Layout/banner/ad QC: `graphic_design_analyzer_skill`.
