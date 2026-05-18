@@ -1,6 +1,6 @@
 ---
-name: image_analysis_skill
-description: Unified image analysis with multi-provider routing.
+name: media_model_router_tool
+description: Unified multi-provider model routing.
 ---
 
 触发意图：

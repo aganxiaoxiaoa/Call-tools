@@ -1,16 +1,17 @@
 # media_model_router_tool
 
-支持自然语言模型路由（OpenRouter 动态模型表，不写死单一模型）。
+这是**多平台模型路由**工具，不只 OpenRouter。
 
-- 动态查询：`https://openrouter.ai/api/v1/models`
-- 支持 exact model id / provider prefix / free / cheap / best
-- 可验证输入输出模态（text/image/video/audio/generation）
+支持 provider：OpenRouter / DashScope(百炼) / OpenAI / DeepSeek / local endpoint。
+
 - 不修改 `openclaw.json`
 - 不切换全局模型
+- API key 来自环境变量
 - 不打印 API key
+- 支持自然语言：免费/最便宜/最强/品牌/精确模型ID
 
 命令：
-- `list-openrouter-models`
+- `list-models`
 - `resolve-model`
-- `recommend-openrouter-model`
-- `call-openrouter-vision`
+- `recommend-model`
+- `call-vision`
