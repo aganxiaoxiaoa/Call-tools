@@ -36,6 +36,18 @@ def openai_compat_vision(base_url, api_key, model, image_path, prompt):
     try:return json.loads(txt)
     except:return {'raw_text':txt}
 
+def local_openai_compat_vision(image_path, prompt, model=None):
+    base_url=os.getenv('LOCAL_VISION_BASE_URL','http://127.0.0.1:1234/v1')
+    api_key=os.getenv('LOCAL_VISION_API_KEY','lm-studio')
+    use_model=model or os.getenv('LOCAL_VISION_MODEL')
+    if not use_model:
+        return None, {'error':'missing LOCAL_VISION_MODEL (or --vision-model)','fallback_reason':'missing_local_model','base_url':base_url}
+    try:
+        sem=openai_compat_vision(base_url, api_key, use_model, image_path, prompt)
+        return sem, {'base_url':base_url,'model':use_model,'fallback_reason':None,'error':None}
+    except Exception as e:
+        return None, {'base_url':base_url,'model':use_model,'fallback_reason':'local_endpoint_unavailable','error':str(e)}
+
 def local_cv_analysis(image_path, brand, scene_type, object_type, use_alpha, reference, expected_height_change):
     try:
         from PIL import Image, ImageStat
@@ -72,7 +84,7 @@ def local_cv_analysis(image_path, brand, scene_type, object_type, use_alpha, ref
             elif wr>0.9 or hr>0.9: conf='medium'
 
     x1,y1,x2,y2=b; sw,sh=x2-x1+1,y2-y1+1
-    geom={'subject_bbox':{'left':x1,'top':y1,'right':x2,'bottom':y2},'subject_width_px':sw,'subject_height_px':sh,'subject_height_ratio':round(sh/h,4),'subject_width_ratio':round(sw/w,4),'margins':{'top':y1,'bottom':h-1-y2,'left':x1,'right':w-1-x2},'crop_risk':[],'confidence':conf}
+    geom={'subject_bbox':{'left':x1,'top':y1,'right':x2,'bottom':y2},'subject_width_px':sw,'subject_height_px':sh,'subject_height_ratio':round(sh/h,4),'subject_width_ratio':round(sw/w,4),'margins':{'top':y1,'bottom':h-1-y2,'left':x1,'right':w-1-x2},'crop_risk':[],'confidence':conf,'method':method}
     if sh/h>0.9: geom['crop_risk'].append('主体过大')
     if sh/h<0.35: geom['crop_risk'].append('主体过小')
     if min(x1,y1,w-1-x2,h-1-y2)<8: geom['crop_risk'].append('接近裁切')
@@ -94,6 +106,17 @@ def local_cv_analysis(image_path, brand, scene_type, object_type, use_alpha, ref
 
     return {'image_info':{'filename':Path(image_path).name,'image_size':f'{w}x{h}','file_size':Path(image_path).stat().st_size},'color_analysis':{'average_brightness':brightness,'contrast':contrast,'saturation':sat,'casts':casts},'local_geometry':geom,'product_analysis':product,'reference_comparison':ref}
 
+def render_detailed_markdown(out):
+    info=out['image_info']; color=out['color_analysis']; geo=out['local_geometry']; prod=out['product_analysis']; st=out['vision_model_status']
+    lines=['# 统一视觉分析报告','', '## 图像信息', f"- 文件名: {info['filename']}", f"- 尺寸: {info['image_size']}", f"- 文件大小: {info['file_size']} bytes", '', '## local-basic 颜色分析', f"- 平均亮度: {color['average_brightness']}", f"- 对比度: {color['contrast']}", f"- 饱和度: {color.get('saturation')}", f"- 偏色风险: {', '.join(color.get('casts') or ['none'])}", '', '## local-basic 几何分析', f"- 检测方法: {geo.get('method')}", f"- 置信度: {geo['confidence']}", f"- 主体框: {geo['subject_bbox']}", f"- 主体宽高比(相对画面): W={geo['subject_width_ratio']} H={geo['subject_height_ratio']}", f"- 边距: {geo['margins']}", f"- 裁切风险: {', '.join(geo['crop_risk'])}", '', '## 产品结构估计', f"- 产品宽高比: {prod['product_aspect_ratio']}", f"- 标签高度估计(px): {prod['label_estimate']}", f"- 瓶盖高度估计(px): {prod['cap_estimate']}"]
+    if out.get('reference_comparison'):
+        lines += ['', '## 参考图对比', f"- 对比结果: {out['reference_comparison']}"]
+    lines += ['', '## 语义视觉状态', f"- local_basic_available: {str(st['local_basic_available']).lower()}", f"- semantic_vision_available: {str(st['semantic_vision_available']).lower()}", f"- vision_provider_used: {st['vision_provider_used']}", f"- fallback_to_local_basic: {str(st['fallback_to_local_basic']).lower()}", f"- fallback_reason: {st['fallback_reason']}", f"- error: {st['error']}"]
+    sem=out.get('semantic_analysis',{})
+    if sem:
+        lines += ['', '## 语义输出', '```json', json.dumps(sem, ensure_ascii=False, indent=2), '```']
+    return '\n'.join(lines)
+
 def cmd_status(args):
     pkgs=['pillow','numpy','torch','transformers','accelerate','safetensors','sentencepiece','huggingface_hub']
     checks={}
@@ -110,8 +133,8 @@ def cmd_install(args):
     if not model:
         print('install-local-vlm 需要 --model',file=sys.stderr); sys.exit(1)
     target=MODEL_ROOT/backend/model.replace('/','__'); target.mkdir(parents=True,exist_ok=True)
-    result={'backend':backend,'model':model,'target':str(target),'dry_run':not args.yes,'downloaded':False,'error':None,'warning':None}
-    if backend=='qwen25vl' and any(x in model.lower() for x in ['7b','14b','32b']): result['warning']='模型较大，磁盘/显存压力高。'
+    result={'backend':backend,'model':model,'target':str(target),'dry_run':not args.yes,'downloaded':False,'error':None,'warning':'下载模型不等于可推理，需本地 OpenAI-compatible 服务（LM Studio/Ollama/vLLM 等）已启动。'}
+    if backend=='qwen25vl' and any(x in model.lower() for x in ['7b','14b','32b']): result['warning']+=' 模型较大，磁盘/显存压力高。'
     if args.yes:
         spec=importlib.util.find_spec('huggingface_hub')
         if spec is None:
@@ -128,9 +151,6 @@ def cmd_install(args):
     js.write_text(json.dumps(result,ensure_ascii=False,indent=2),encoding='utf-8')
     print(file_uri(md))
 
-def run_local_vlm(image_path, backend, prompt, vision_model):
-    return None, {'error':'local-vlm runtime not implemented','fallback_reason':'local-vlm runtime not implemented'}
-
 def main():
     p=argparse.ArgumentParser(description='统一视觉分析工具')
     p.add_argument('command', nargs='?', default='analyze', choices=['analyze','status','install-local-vlm','analyze-local-vlm'])
@@ -138,7 +158,7 @@ def main():
     p.add_argument('--mode',default='full',choices=MODES); p.add_argument('--analysis-depth',default='standard',choices=['basic','standard','deep'])
     p.add_argument('--scene-type',default='generic',choices=SCENES); p.add_argument('--object-type',default='generic',choices=OBJECTS)
     p.add_argument('--reference'); p.add_argument('--reference-dir'); p.add_argument('--expected-height-change'); p.add_argument('--text'); p.add_argument('--ratio'); p.add_argument('--use-alpha',action='store_true')
-    p.add_argument('--use-vision',action='store_true'); p.add_argument('--vision-provider',default='none',choices=['none','qwen','gemini','openai','local']); p.add_argument('--vision-model',default='qwen-vl-plus')
+    p.add_argument('--use-vision',action='store_true'); p.add_argument('--vision-provider',default='none',choices=['none','qwen','gemini','openai','local']); p.add_argument('--vision-model',default='')
     p.add_argument('--ocr',action='store_true'); p.add_argument('--detect-people',action='store_true',default=True); p.add_argument('--detect-products',action='store_true',default=True); p.add_argument('--detect-layout',action='store_true',default=True)
     p.add_argument('--output-dir',default=str(OUT_ROOT)); p.add_argument('--json',action='store_true')
     p.add_argument('--backend',choices=BACKENDS,default='auto'); p.add_argument('--model'); p.add_argument('--prompt',default='Analyze image'); p.add_argument('--yes',action='store_true')
@@ -154,7 +174,6 @@ def main():
          'semantic_analysis':{'local_can_judge':['geometry','color','crop','proportion'],'need_vision':['label text','cap identity','scene objects','people','device logic']},
          'prompts':{},'scores':{},'confidence':{'subject':local['local_geometry']['confidence']},
          'vision_model_status':{'local_basic_available':True,'semantic_vision_available':False,'vision_provider_used':'none','fallback_reason':None,'error':None,'fallback_to_local_basic':True}}
-    if a.ocr: out['semantic_analysis']['ocr_status']='not_implemented'
 
     if a.use_vision:
         if a.no_external_vision and a.vision_provider in ['qwen','gemini','openai']:
@@ -165,20 +184,20 @@ def main():
                 out['vision_model_status'].update({'vision_provider_used':'qwen','fallback_reason':'missing_api_key','error':'qwen_error = 缺少 DASHSCOPE_API_KEY'})
             else:
                 try:
-                    sem=openai_compat_vision(os.getenv('DASHSCOPE_BASE_URL','https://dashscope.aliyuncs.com/compatible-mode/v1'),key,a.vision_model,a.image,a.prompt)
+                    sem=openai_compat_vision(os.getenv('DASHSCOPE_BASE_URL','https://dashscope.aliyuncs.com/compatible-mode/v1'),key,a.vision_model or 'qwen-vl-plus',a.image,a.prompt)
                     out['semantic_analysis'].update(sem if isinstance(sem,dict) else {})
                     out['vision_model_status'].update({'semantic_vision_available':True,'vision_provider_used':'qwen','fallback_to_local_basic':False,'fallback_reason':None})
                 except Exception as e:
                     out['vision_model_status'].update({'vision_provider_used':'qwen','fallback_reason':'remote_call_failed','error':str(e)})
         elif a.vision_provider=='local':
-            sem,meta=run_local_vlm(a.image,a.backend,a.prompt,a.vision_model)
+            sem,meta=local_openai_compat_vision(a.image,a.prompt,a.vision_model or os.getenv('LOCAL_VISION_MODEL'))
             out['vision_model_status'].update({'vision_provider_used':'local','fallback_reason':meta.get('fallback_reason'),'error':meta.get('error')})
             if sem is not None:
-                out['semantic_analysis'].update(sem)
+                out['semantic_analysis'].update(sem if isinstance(sem,dict) else {'raw_text':str(sem)})
                 out['vision_model_status'].update({'semantic_vision_available':True,'fallback_to_local_basic':False,'fallback_reason':None,'error':None})
 
     od=now_dir(Path(a.output_dir)); md=od/'image_analysis_report.md'; js=od/'image_analysis_report.json'
-    md.write_text('# 统一视觉分析报告\n- local_basic_available: true\n- semantic_vision_available: '+str(out['vision_model_status']['semantic_vision_available']).lower()+'\n- vision_provider_used: '+str(out['vision_model_status']['vision_provider_used'])+'\n- fallback_reason: '+str(out['vision_model_status']['fallback_reason']),encoding='utf-8')
+    md.write_text(render_detailed_markdown(out),encoding='utf-8')
     js.write_text(json.dumps(out,ensure_ascii=False,indent=2),encoding='utf-8')
     if a.json: print(json.dumps(out,ensure_ascii=False))
     print(file_uri(md))
